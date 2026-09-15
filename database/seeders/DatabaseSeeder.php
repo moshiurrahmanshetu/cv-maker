@@ -23,6 +23,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Seed Templates & Categories
+        $this->call(TemplateSeeder::class);
+        $classicTemplate = \App\Models\CvTemplate::where('key', 'classic-executive')->first();
+        $modernTemplate = \App\Models\CvTemplate::where('key', 'modern-minimal')->first();
+        $techTemplate = \App\Models\CvTemplate::where('key', 'technical-split')->first();
+
         // 1. Admin User
         $admin = User::firstOrCreate(
             ['email' => 'admin@cvmaker.local'],
@@ -59,11 +65,12 @@ class DatabaseSeeder extends Seeder
         // Sample 1: Published Full-Stack CV for Alex Morgan
         $cv1 = Cv::create([
             'user_id' => $user->id,
+            'template_id' => $classicTemplate?->id,
             'title' => 'Senior Full Stack Engineer Resume',
             'slug' => 'senior-full-stack-engineer-resume',
             'summary' => 'Passionate Full Stack Software Engineer with 7+ years of experience building scalable web applications, RESTful APIs, and distributed microservices. Specialized in Laravel, MySQL, and modern frontend architectures.',
             'status' => 'published',
-            'template_key' => 'classic',
+            'template_key' => 'classic-executive',
             'primary_color' => '#1b2a4a',
             'font_family' => 'Inter',
             'completion_percentage' => 95,
@@ -157,11 +164,12 @@ class DatabaseSeeder extends Seeder
         // Sample 2: Incomplete Draft CV for Alex Morgan
         $cv2 = Cv::create([
             'user_id' => $user->id,
+            'template_id' => $modernTemplate?->id,
             'title' => 'Product Strategy Specialist (Draft)',
             'slug' => 'product-strategy-specialist-draft',
             'summary' => 'Transitioning technical background into customer-centric product management.',
             'status' => 'draft',
-            'template_key' => 'modern',
+            'template_key' => 'modern-minimal',
             'primary_color' => '#2c3e50',
             'font_family' => 'Inter',
             'completion_percentage' => 35,
@@ -178,11 +186,12 @@ class DatabaseSeeder extends Seeder
         // Sample 3: CV belonging to Jane Doe (for ownership isolation check)
         $cv3 = Cv::create([
             'user_id' => $user2->id,
+            'template_id' => $techTemplate?->id,
             'title' => 'Jane Doe - Marketing Director',
             'slug' => 'jane-doe-marketing-director',
             'summary' => 'Experienced marketing leader specializing in B2B SaaS growth and brand positioning.',
             'status' => 'published',
-            'template_key' => 'classic',
+            'template_key' => 'technical-split',
             'completion_percentage' => 80,
         ]);
 

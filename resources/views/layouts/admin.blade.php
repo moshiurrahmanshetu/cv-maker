@@ -53,6 +53,18 @@
                         <span class="nav-item-text">All CVs</span>
                     </a>
                 </li>
+                <li>
+                    <a href="{{ route('admin.templates.index') }}" class="sidebar-link {{ request()->routeIs('admin.templates.index', 'admin.templates.create', 'admin.templates.edit') ? 'active' : '' }}" title="CV Templates">
+                        <i class="bi bi-palette"></i>
+                        <span class="nav-item-text">Templates</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.templates.categories.index') }}" class="sidebar-link {{ request()->routeIs('admin.templates.categories.*') ? 'active' : '' }}" title="Template Categories">
+                        <i class="bi bi-tags"></i>
+                        <span class="nav-item-text">Categories</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-section-title">Platform</li>
                 <li>
@@ -105,6 +117,18 @@
                         <a href="{{ route('admin.cvs.index') }}" class="sidebar-link {{ request()->routeIs('admin.cvs.*') ? 'active' : '' }}">
                             <i class="bi bi-file-earmark-text"></i>
                             <span>All CVs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.templates.index') }}" class="sidebar-link {{ request()->routeIs('admin.templates.index', 'admin.templates.create', 'admin.templates.edit') ? 'active' : '' }}">
+                            <i class="bi bi-palette"></i>
+                            <span>Templates</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.templates.categories.index') }}" class="sidebar-link {{ request()->routeIs('admin.templates.categories.*') ? 'active' : '' }}">
+                            <i class="bi bi-tags"></i>
+                            <span>Categories</span>
                         </a>
                     </li>
                     <li class="sidebar-section-title">Platform</li>

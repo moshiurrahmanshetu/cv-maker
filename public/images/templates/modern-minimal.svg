@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="100%" height="100%">
+  <!-- Background Paper -->
+  <rect width="400" height="520" fill="#ffffff" rx="8" />
+  <rect x="0.5" y="0.5" width="399" height="519" fill="none" stroke="#e2e8f0" stroke-width="1" rx="8" />
+
+  <!-- Left Sidebar (35% width, #f8fafc) -->
+  <path d="M 8 0 L 140 0 L 140 520 L 8 520 A 8 8 0 0 1 0 512 L 0 8 A 8 8 0 0 1 8 0 Z" fill="#f8fafc" />
+  <line x1="140" y1="0" x2="140" y2="520" stroke="#e2e8f0" stroke-width="1" />
+
+  <!-- Avatar Photo in Sidebar -->
+  <circle cx="70" cy="50" r="26" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.5" />
+  <circle cx="70" cy="44" r="10" fill="#94a3b8" />
+  <path d="M 50 64 A 20 20 0 0 1 90 64" fill="#94a3b8" />
+
+  <!-- Sidebar Contact -->
+  <rect x="20" y="92" width="70" height="6" rx="1" fill="#475569" />
+  <line x1="20" y1="102" x2="120" y2="102" stroke="#cbd5e1" stroke-width="0.8" />
+  <rect x="20" y="110" width="90" height="4" rx="1" fill="#64748b" />
+  <rect x="20" y="120" width="80" height="4" rx="1" fill="#64748b" />
+  <rect x="20" y="130" width="95" height="4" rx="1" fill="#64748b" />
+  <rect x="20" y="140" width="85" height="4" rx="1" fill="#64748b" />
+
+  <!-- Sidebar Skills with Bars -->
+  <rect x="20" y="160" width="60" height="6" rx="1" fill="#475569" />
+  <line x1="20" y1="170" x2="120" y2="170" stroke="#cbd5e1" stroke-width="0.8" />
+  
+  <rect x="20" y="178" width="55" height="4" rx="1" fill="#1e293b" />
+  <rect x="20" y="185" width="100" height="3" rx="1.5" fill="#e2e8f0" />
+  <rect x="20" y="185" width="90" height="3" rx="1.5" fill="#334155" />
+
+  <rect x="20" y="196" width="65" height="4" rx="1" fill="#1e293b" />
+  <rect x="20" y="203" width="100" height="3" rx="1.5" fill="#e2e8f0" />
+  <rect x="20" y="203" width="80" height="3" rx="1.5" fill="#334155" />
+
+  <rect x="20" y="214" width="50" height="4" rx="1" fill="#1e293b" />
+  <rect x="20" y="221" width="100" height="3" rx="1.5" fill="#e2e8f0" />
+  <rect x="20" y="221" width="70" height="3" rx="1.5" fill="#334155" />
+
+  <!-- Sidebar Languages -->
+  <rect x="20" y="242" width="70" height="6" rx="1" fill="#475569" />
+  <line x1="20" y1="252" x2="120" y2="252" stroke="#cbd5e1" stroke-width="0.8" />
+  <rect x="20" y="260" width="90" height="4" rx="1" fill="#64748b" />
+  <rect x="20" y="270" width="85" height="4" rx="1" fill="#64748b" />
+
+  <!-- Right Main Area -->
+  <!-- Header Title -->
+  <rect x="160" y="30" width="140" height="14" rx="2" fill="#0f172a" />
+  <rect x="160" y="50" width="110" height="8" rx="1.5" fill="#64748b" />
+  <line x1="160" y1="68" x2="380" y2="68" stroke="#e2e8f0" stroke-width="1" />
+
+  <!-- Profile Summary -->
+  <rect x="160" y="78" width="90" height="7" rx="1" fill="#334155" />
+  <rect x="160" y="90" width="220" height="4" rx="1" fill="#64748b" />
+  <rect x="160" y="98" width="210" height="4" rx="1" fill="#64748b" />
+  <rect x="160" y="106" width="180" height="4" rx="1" fill="#64748b" />
+
+  <!-- Experience -->
+  <rect x="160" y="124" width="100" height="7" rx="1" fill="#334155" />
+  <line x1="160" y1="134" x2="380" y2="134" stroke="#f1f5f9" stroke-width="1" />
+
+  <rect x="160" y="142" width="110" height="6" rx="1" fill="#0f172a" />
+  <rect x="320" y="142" width="60" height="5" rx="1" fill="#94a3b8" />
+  <rect x="160" y="151" width="80" height="4" rx="1" fill="#64748b" />
+  <rect x="160" y="158" width="220" height="4" rx="1" fill="#94a3b8" />
+  <rect x="160" y="165" width="200" height="4" rx="1" fill="#94a3b8" />
+
+  <rect x="160" y="178" width="100" height="6" rx="1" fill="#0f172a" />
+  <rect x="330" y="178" width="50" height="5" rx="1" fill="#94a3b8" />
+  <rect x="160" y="187" width="75" height="4" rx="1" fill="#64748b" />
+  <rect x="160" y="194" width="220" height="4" rx="1" fill="#94a3b8" />
+
+  <!-- Education -->
+  <rect x="160" y="214" width="80" height="7" rx="1" fill="#334155" />
+  <rect x="160" y="226" width="110" height="6" rx="1" fill="#0f172a" />
+  <rect x="320" y="226" width="60" height="5" rx="1" fill="#94a3b8" />
+  <rect x="160" y="235" width="130" height="4" rx="1" fill="#64748b" />
+
+  <!-- Projects -->
+  <rect x="160" y="252" width="80" height="7" rx="1" fill="#334155" />
+  <rect x="160" y="264" width="220" height="32" rx="3" fill="#f8fafc" stroke="#e2e8f0" stroke-width="0.8" />
+  <rect x="160" y="304" width="220" height="32" rx="3" fill="#f8fafc" stroke="#e2e8f0" stroke-width="0.8" />
+
+  <!-- Modern Badge Bottom Right -->
+  <rect x="270" y="475" width="100" height="22" rx="4" fill="#334155" />
+  <text x="320" y="490" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">MODERN</text>
+</svg>

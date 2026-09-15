@@ -84,9 +84,16 @@
                             @endif
                         </div>
 
-                        <p class="small text-muted mb-3 text-truncate">
-                            {{ $cv->personalInfo?->job_title ?? 'No title specified' }}
-                        </p>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <p class="small text-muted mb-0 text-truncate">
+                                {{ $cv->personalInfo?->job_title ?? 'No title specified' }}
+                            </p>
+                            @if($cv->template)
+                                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.7rem;">
+                                    <i class="bi bi-palette me-1"></i>{{ $cv->template->name }}
+                                </span>
+                            @endif
+                        </div>
 
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center small text-muted mb-1" style="font-size: 0.78rem;">

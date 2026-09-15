@@ -14,6 +14,7 @@ class Cv extends Model
 
     protected $fillable = [
         'user_id',
+        'template_id',
         'title',
         'slug',
         'summary',
@@ -26,11 +27,17 @@ class Cv extends Model
 
     protected $casts = [
         'completion_percentage' => 'integer',
+        'template_id' => 'integer',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(CvTemplate::class, 'template_id');
     }
 
     public function personalInfo(): HasOne

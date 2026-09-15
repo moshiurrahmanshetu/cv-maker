@@ -4,16 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cv;
+use App\Services\TemplateService;
 use Illuminate\Http\Request;
 
 class AdminCvController extends Controller
 {
+    public function __construct(
+        protected TemplateService $templateService
+    ) {}
+
     /**
      * Display a listing of all CVs across the system.
      */
     public function index(Request $request)
     {
-        $query = Cv::with(['user', 'personalInfo']);
+        $query = Cv::with(['user', 'personalInfo', 'template']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -36,24 +41,14 @@ class AdminCvController extends Controller
     }
 
     /**
-     * Preview any CV from the admin panel.
+     * Preview any CV from the admin panel with its actual template design.
      */
     public function show(Cv $cv)
     {
-        $cv->load([
-            'user',
-            'personalInfo',
-            'experiences',
-            'educations',
-            'skills',
-            'languages',
-            'certifications',
-            'projects',
-            'awards',
-            'references',
-            'customSections',
-        ]);
+        $cvData = $this->templateService->prepareCvData($cv);
+        $templateModel = $cv->template ?? $this->templateService->findTemplate($cv->template_key);
+        $templateView = $this->templateService->resolveViewPath($templateModel);
 
-        return view('admin.cvs.show', compact('cv'));
+        return view('admin.cvs.show', compact('cv', 'cvData', 'templateModel', 'templateView'));
     }
 }

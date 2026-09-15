@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\AdminCvController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminTemplateCategoryController;
+use App\Http\Controllers\Admin\AdminTemplateController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -10,6 +12,8 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\CvBuilderController;
 use App\Http\Controllers\CvController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TemplateController;
+use App\Services\TemplateService;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,10 +22,15 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Public Landing Page
-Route::get('/', function () {
-    return view('welcome');
+// Public Landing Page with Template Showcase
+Route::get('/', function (TemplateService $templateService) {
+    $categories = $templateService->getCategoriesWithTemplates();
+    $templates = $templateService->getActiveTemplates();
+    return view('welcome', compact('categories', 'templates'));
 })->name('home');
+
+// Public Template Routes
+Route::get('/templates/{template}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
 
 // Guest Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -56,6 +65,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{cv}', [CvController::class, 'destroy'])->name('destroy');
         Route::post('/{cv}/duplicate', [CvController::class, 'duplicate'])->name('duplicate');
         Route::post('/{cv}/toggle-status', [CvController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{cv}/switch-template', [CvController::class, 'switchTemplate'])->name('switch-template');
 
         // Phase 2 - Section-Driven CV Builder Routes
         Route::prefix('{cv}/builder')->name('builder.')->group(function () {
@@ -84,5 +94,23 @@ Route::middleware('auth')->group(function () {
         // All CVs Overview
         Route::get('/cvs', [AdminCvController::class, 'index'])->name('cvs.index');
         Route::get('/cvs/{cv}', [AdminCvController::class, 'show'])->name('cvs.show');
+
+        // Phase 3: Admin Template Categories Management
+        Route::prefix('templates')->name('templates.')->group(function () {
+            Route::get('/categories', [AdminTemplateCategoryController::class, 'index'])->name('categories.index');
+            Route::post('/categories', [AdminTemplateCategoryController::class, 'store'])->name('categories.store');
+            Route::put('/categories/{category}', [AdminTemplateCategoryController::class, 'update'])->name('categories.update');
+            Route::delete('/categories/{category}', [AdminTemplateCategoryController::class, 'destroy'])->name('categories.destroy');
+
+            // Phase 3: Admin Templates Management
+            Route::get('/', [AdminTemplateController::class, 'index'])->name('index');
+            Route::get('/create', [AdminTemplateController::class, 'create'])->name('create');
+            Route::post('/', [AdminTemplateController::class, 'store'])->name('store');
+            Route::get('/{template}/edit', [AdminTemplateController::class, 'edit'])->name('edit');
+            Route::put('/{template}', [AdminTemplateController::class, 'update'])->name('update');
+            Route::delete('/{template}', [AdminTemplateController::class, 'destroy'])->name('destroy');
+            Route::post('/{template}/toggle-status', [AdminTemplateController::class, 'toggleStatus'])->name('toggle-status');
+            Route::post('/{template}/toggle-premium', [AdminTemplateController::class, 'togglePremium'])->name('toggle-premium');
+        });
     });
 });

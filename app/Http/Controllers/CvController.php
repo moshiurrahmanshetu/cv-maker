@@ -13,6 +13,8 @@ use App\Models\CvPersonalInfo;
 use App\Models\CvProject;
 use App\Models\CvReference;
 use App\Models\CvSkill;
+use App\Models\CvTemplate;
+use App\Services\TemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,12 +22,16 @@ use Illuminate\Support\Str;
 
 class CvController extends Controller
 {
+    public function __construct(
+        protected TemplateService $templateService
+    ) {}
+
     /**
      * Display a listing of the user's CVs.
      */
     public function index(Request $request)
     {
-        $query = Auth::user()->cvs()->with('personalInfo');
+        $query = Auth::user()->cvs()->with(['personalInfo', 'template']);
 
         if ($request->filled('status') && in_array($request->status, ['draft', 'published'])) {
             $query->where('status', $request->status);
@@ -47,9 +53,24 @@ class CvController extends Controller
     /**
      * Show the form for creating a new CV.
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('cvs.create');
+        $categories = $this->templateService->getCategoriesWithTemplates();
+        $templates = $this->templateService->getActiveTemplates();
+
+        // Selected template resolution (from ?template_id= or ?template=)
+        $selectedTemplate = null;
+        if ($request->filled('template_id')) {
+            $selectedTemplate = $this->templateService->findTemplate($request->template_id);
+        } elseif ($request->filled('template')) {
+            $selectedTemplate = $this->templateService->findTemplate($request->template);
+        }
+
+        if (!$selectedTemplate) {
+            $selectedTemplate = $this->templateService->getDefaultTemplate();
+        }
+
+        return view('cvs.create', compact('categories', 'templates', 'selectedTemplate'));
     }
 
     /**
@@ -60,17 +81,30 @@ class CvController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
+            'template_id' => ['nullable', 'exists:cv_templates,id'],
             'template_key' => ['nullable', 'string', 'max:50'],
             'job_title' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $cv = DB::transaction(function () use ($validated, $request) {
+        $template = null;
+        if (!empty($validated['template_id'])) {
+            $template = CvTemplate::find($validated['template_id']);
+        } elseif (!empty($validated['template_key'])) {
+            $template = $this->templateService->findTemplate($validated['template_key']);
+        }
+
+        if (!$template) {
+            $template = $this->templateService->getDefaultTemplate();
+        }
+
+        $cv = DB::transaction(function () use ($validated, $template) {
             $cv = Cv::create([
                 'user_id' => Auth::id(),
+                'template_id' => $template?->id,
                 'title' => $validated['title'],
                 'slug' => Str::slug($validated['title']) . '-' . Str::random(6),
                 'status' => 'draft',
-                'template_key' => $validated['template_key'] ?? 'classic',
+                'template_key' => $template?->key ?? 'classic-executive',
                 'completion_percentage' => 15,
             ]);
 
@@ -89,26 +123,47 @@ class CvController extends Controller
     }
 
     /**
-     * Display the specified CV (Preview Placeholder).
+     * Display the specified CV using its dynamic selected template.
      */
     public function show(Cv $cv)
     {
         $this->authorize('view', $cv);
 
-        $cv->load([
-            'personalInfo',
-            'experiences',
-            'educations',
-            'skills',
-            'languages',
-            'certifications',
-            'projects',
-            'awards',
-            'references',
-            'customSections',
+        $cvData = $this->templateService->prepareCvData($cv);
+        $templateModel = $cv->template ?? $this->templateService->findTemplate($cv->template_key);
+        $templateView = $this->templateService->resolveViewPath($templateModel);
+        $activeTemplates = $this->templateService->getActiveTemplates();
+
+        return view('cvs.show', compact('cv', 'cvData', 'templateModel', 'templateView', 'activeTemplates'));
+    }
+
+    /**
+     * Switch template for an existing CV on the fly without losing any data.
+     */
+    public function switchTemplate(Request $request, Cv $cv)
+    {
+        $this->authorize('update', $cv);
+
+        $validated = $request->validate([
+            'template_id' => ['required', 'exists:cv_templates,id'],
         ]);
 
-        return view('cvs.show', compact('cv'));
+        $template = CvTemplate::findOrFail($validated['template_id']);
+
+        $cv->update([
+            'template_id' => $template->id,
+            'template_key' => $template->key,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Template switched to {$template->name}.",
+                'template_name' => $template->name,
+            ]);
+        }
+
+        return back()->with('success', "Template switched to '{$template->name}'. All your CV content is preserved.");
     }
 
     /**
@@ -132,6 +187,7 @@ class CvController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'summary' => ['nullable', 'string'],
             'status' => ['nullable', 'in:draft,published'],
+            'template_id' => ['nullable', 'exists:cv_templates,id'],
             'template_key' => ['nullable', 'string', 'max:50'],
             'primary_color' => ['nullable', 'string', 'max:30'],
             'font_family' => ['nullable', 'string', 'max:50'],
@@ -219,6 +275,7 @@ class CvController extends Controller
                 'title' => $validated['title'],
                 'summary' => $validated['summary'] ?? null,
                 'status' => $status,
+                'template_id' => $validated['template_id'] ?? $cv->template_id,
                 'template_key' => $validated['template_key'] ?? $cv->template_key,
                 'primary_color' => $validated['primary_color'] ?? $cv->primary_color,
                 'font_family' => $validated['font_family'] ?? $cv->font_family,
@@ -363,6 +420,8 @@ class CvController extends Controller
             $newCv->slug = Str::slug($newCv->title) . '-' . Str::random(6);
             $newCv->status = 'draft';
             $newCv->user_id = Auth::id();
+            $newCv->template_id = $cv->template_id;
+            $newCv->template_key = $cv->template_key;
             $newCv->save();
 
             // Duplicate Personal Info
@@ -426,6 +485,13 @@ class CvController extends Controller
                 $newRef = $ref->replicate(['cv_id', 'created_at', 'updated_at']);
                 $newRef->cv_id = $newCv->id;
                 $newRef->save();
+            }
+
+            // Duplicate Custom Sections
+            foreach ($cv->customSections as $cust) {
+                $newCust = $cust->replicate(['cv_id', 'created_at', 'updated_at']);
+                $newCust->cv_id = $newCv->id;
+                $newCust->save();
             }
 
             return $newCv;

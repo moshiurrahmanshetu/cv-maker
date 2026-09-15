@@ -20,11 +20,11 @@
     <div class="col-sm-6 col-xl-3">
         <div class="stat-widget">
             <div>
-                <div class="stat-widget-label">Administrators</div>
-                <div class="stat-widget-number">{{ $adminUsers }}</div>
+                <div class="stat-widget-label">Total Templates</div>
+                <div class="stat-widget-number">{{ $totalTemplates }}</div>
             </div>
             <div class="stat-widget-icon">
-                <i class="bi bi-shield-check"></i>
+                <i class="bi bi-palette"></i>
             </div>
         </div>
     </div>
