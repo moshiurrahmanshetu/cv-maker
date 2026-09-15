@@ -78,6 +78,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/autosave', [CvBuilderController::class, 'autosave'])->name('autosave');
             Route::get('/render-preview', [CvBuilderController::class, 'renderPreview'])->name('render-preview');
             Route::post('/items/{section}', [CvBuilderController::class, 'storeItem'])->name('items.store');
+            Route::post('/items/{section}/batch', [CvBuilderController::class, 'saveSectionBatch'])->name('items.batch');
             Route::put('/items/{section}/{id}', [CvBuilderController::class, 'updateItem'])->name('items.update');
             Route::delete('/items/{section}/{id}', [CvBuilderController::class, 'deleteItem'])->name('items.destroy');
             Route::post('/items/{section}/reorder', [CvBuilderController::class, 'reorderItems'])->name('items.reorder');

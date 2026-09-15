@@ -367,6 +367,381 @@ class CvBuilderController extends Controller
     }
 
     /**
+     * Save/synchronize a batch of repeatable records for a section in one unified operation.
+     */
+    public function saveSectionBatch(Request $request, Cv $cv, string $section)
+    {
+        $this->authorize('update', $cv);
+
+        $validSections = [
+            'experience',
+            'education',
+            'skills',
+            'languages',
+            'certifications',
+            'projects',
+            'awards',
+            'references',
+            'custom',
+        ];
+
+        if (!in_array($section, $validSections)) {
+            abort(404);
+        }
+
+        // 1. Process deletions
+        $deletedIds = $request->input('deleted_ids', []);
+        if (is_array($deletedIds) && count($deletedIds) > 0) {
+            $deletedIds = array_filter(array_map('intval', $deletedIds));
+            if (!empty($deletedIds)) {
+                match ($section) {
+                    'experience' => $cv->experiences()->whereIn('id', $deletedIds)->delete(),
+                    'education' => $cv->educations()->whereIn('id', $deletedIds)->delete(),
+                    'skills' => $cv->skills()->whereIn('id', $deletedIds)->delete(),
+                    'languages' => $cv->languages()->whereIn('id', $deletedIds)->delete(),
+                    'certifications' => $cv->certifications()->whereIn('id', $deletedIds)->delete(),
+                    'projects' => $cv->projects()->whereIn('id', $deletedIds)->delete(),
+                    'awards' => $cv->awards()->whereIn('id', $deletedIds)->delete(),
+                    'references' => $cv->references()->whereIn('id', $deletedIds)->delete(),
+                    'custom' => $cv->customSections()->whereIn('id', $deletedIds)->delete(),
+                };
+            }
+        }
+
+        // 2. Process items batch
+        $rawItems = $request->input('items', []);
+        if (!is_array($rawItems)) {
+            $rawItems = [];
+        }
+
+        // Validate and persist items in a database transaction
+        DB::transaction(function () use ($cv, $section, $rawItems, $request) {
+            $order = 1;
+            foreach ($rawItems as $key => $itemData) {
+                if (!is_array($itemData)) continue;
+
+                $itemId = isset($itemData['id']) && is_numeric($itemData['id']) ? (int)$itemData['id'] : null;
+
+                // Skip completely empty new items
+                if (!$itemId && $this->isItemDataCompletelyEmpty($section, $itemData)) {
+                    continue;
+                }
+
+                $validated = $this->validateBatchItemData($section, $itemData, $request, (string)$key);
+
+                match ($section) {
+                    'experience' => $this->persistBatchExperience($cv, $itemId, $validated, $itemData, $order),
+                    'education' => $this->persistBatchEducation($cv, $itemId, $validated, $itemData, $order),
+                    'skills' => $this->persistBatchSkill($cv, $itemId, $validated, $itemData, $order),
+                    'languages' => $this->persistBatchLanguage($cv, $itemId, $validated, $itemData, $order),
+                    'certifications' => $this->persistBatchCertification($cv, $itemId, $validated, $itemData, $order),
+                    'projects' => $this->persistBatchProject($cv, $itemId, $validated, $itemData, $order),
+                    'awards' => $this->persistBatchAward($cv, $itemId, $validated, $itemData, $order),
+                    'references' => $this->persistBatchReference($cv, $itemId, $validated, $itemData, $order),
+                    'custom' => $this->persistBatchCustomSection($cv, $itemId, $validated, $itemData, $order),
+                };
+
+                $order++;
+            }
+        });
+
+        $cv->completion_percentage = $cv->calculateCompletion();
+        $cv->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Changes saved successfully.',
+                'completion_percentage' => $cv->completion_percentage,
+            ]);
+        }
+
+        $sectionLabels = [
+            'experience' => 'Work Experience',
+            'education' => 'Education',
+            'skills' => 'Skills',
+            'languages' => 'Languages',
+            'certifications' => 'Certifications',
+            'projects' => 'Projects',
+            'awards' => 'Awards',
+            'references' => 'References',
+            'custom' => 'Custom Section',
+        ];
+        $label = $sectionLabels[$section] ?? 'Section';
+
+        return redirect()->route('cvs.builder.show', ['cv' => $cv, 'section' => $section])
+            ->with('success', "{$label} changes saved successfully.");
+    }
+
+    protected function isItemDataCompletelyEmpty(string $section, array $data): bool
+    {
+        $nonEmptyKeys = match ($section) {
+            'experience' => ['job_title', 'employer', 'description'],
+            'education' => ['institution', 'degree', 'field_of_study', 'description'],
+            'skills' => ['name', 'category'],
+            'languages' => ['language'],
+            'certifications' => ['name', 'issuing_organization', 'credential_id', 'description'],
+            'projects' => ['title', 'role', 'description', 'technologies'],
+            'awards' => ['title', 'issuer', 'description'],
+            'references' => ['full_name', 'job_title', 'company', 'email', 'phone'],
+            'custom' => ['section_title', 'title', 'subtitle', 'content'],
+            default => ['name', 'title'],
+        };
+
+        foreach ($nonEmptyKeys as $key) {
+            if (!empty(trim((string)($data[$key] ?? '')))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected function validateBatchItemData(string $section, array $itemData, Request $request, string $key): array
+    {
+        $rules = match ($section) {
+            'experience' => [
+                'job_title' => ['required', 'string', 'max:255'],
+                'employer' => ['required', 'string', 'max:255'],
+                'city' => ['nullable', 'string', 'max:100'],
+                'country' => ['nullable', 'string', 'max:100'],
+                'start_date' => ['nullable', 'string', 'max:50'],
+                'end_date' => ['nullable', 'string', 'max:50'],
+                'description' => ['nullable', 'string'],
+            ],
+            'education' => [
+                'institution' => ['required', 'string', 'max:255'],
+                'degree' => ['required', 'string', 'max:255'],
+                'field_of_study' => ['nullable', 'string', 'max:255'],
+                'city' => ['nullable', 'string', 'max:100'],
+                'country' => ['nullable', 'string', 'max:100'],
+                'start_date' => ['nullable', 'string', 'max:50'],
+                'end_date' => ['nullable', 'string', 'max:50'],
+                'grade_or_gpa' => ['nullable', 'string', 'max:50'],
+                'description' => ['nullable', 'string'],
+            ],
+            'skills' => [
+                'name' => ['required', 'string', 'max:100'],
+                'level' => ['required', 'string', 'max:30'],
+                'rating' => ['nullable', 'integer', 'min:1', 'max:100'],
+                'category' => ['nullable', 'string', 'max:50'],
+            ],
+            'languages' => [
+                'language' => ['required', 'string', 'max:100'],
+                'proficiency' => ['required', 'string', 'max:50'],
+            ],
+            'certifications' => [
+                'name' => ['required', 'string', 'max:255'],
+                'issuing_organization' => ['nullable', 'string', 'max:255'],
+                'issue_date' => ['nullable', 'string', 'max:50'],
+                'expiration_date' => ['nullable', 'string', 'max:50'],
+                'credential_id' => ['nullable', 'string', 'max:100'],
+                'credential_url' => ['nullable', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+            ],
+            'projects' => [
+                'title' => ['required', 'string', 'max:255'],
+                'role' => ['nullable', 'string', 'max:255'],
+                'project_url' => ['nullable', 'string', 'max:255'],
+                'technologies' => ['nullable', 'string', 'max:255'],
+                'start_date' => ['nullable', 'string', 'max:50'],
+                'end_date' => ['nullable', 'string', 'max:50'],
+                'description' => ['nullable', 'string'],
+            ],
+            'awards' => [
+                'title' => ['required', 'string', 'max:255'],
+                'issuer' => ['nullable', 'string', 'max:255'],
+                'issue_date' => ['nullable', 'string', 'max:50'],
+                'description' => ['nullable', 'string'],
+            ],
+            'references' => [
+                'full_name' => ['required', 'string', 'max:255'],
+                'job_title' => ['nullable', 'string', 'max:255'],
+                'company' => ['nullable', 'string', 'max:255'],
+                'email' => ['nullable', 'string', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:50'],
+                'relationship' => ['nullable', 'string', 'max:255'],
+            ],
+            'custom' => [
+                'section_title' => ['required', 'string', 'max:255'],
+                'title' => ['nullable', 'string', 'max:255'],
+                'subtitle' => ['nullable', 'string', 'max:255'],
+                'date_period' => ['nullable', 'string', 'max:100'],
+                'content' => ['nullable', 'string'],
+            ],
+            default => [],
+        };
+
+        $validator = \Illuminate\Support\Facades\Validator::make($itemData, $rules);
+
+        if ($validator->fails()) {
+            throw new \Illuminate\Validation\ValidationException($validator);
+        }
+
+        return $validator->validated();
+    }
+
+    protected function persistBatchExperience(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $isCurrent = !empty($raw['is_current']);
+        $payload = array_merge($validated, [
+            'is_current' => $isCurrent,
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->experiences()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->experiences()->create($payload);
+    }
+
+    protected function persistBatchEducation(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $isCurrent = !empty($raw['is_current']);
+        $payload = array_merge($validated, [
+            'is_current' => $isCurrent,
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->educations()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->educations()->create($payload);
+    }
+
+    protected function persistBatchSkill(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $payload = array_merge($validated, [
+            'rating' => isset($validated['rating']) ? (int)$validated['rating'] : 80,
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->skills()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->skills()->create($payload);
+    }
+
+    protected function persistBatchLanguage(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $payload = array_merge($validated, [
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->languages()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->languages()->create($payload);
+    }
+
+    protected function persistBatchCertification(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $payload = array_merge($validated, [
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->certifications()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->certifications()->create($payload);
+    }
+
+    protected function persistBatchProject(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $payload = array_merge($validated, [
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->projects()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->projects()->create($payload);
+    }
+
+    protected function persistBatchAward(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $payload = array_merge($validated, [
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->awards()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->awards()->create($payload);
+    }
+
+    protected function persistBatchReference(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $isHidden = !empty($raw['is_hidden']);
+        $payload = array_merge($validated, [
+            'is_hidden' => $isHidden,
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->references()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->references()->create($payload);
+    }
+
+    protected function persistBatchCustomSection(Cv $cv, ?int $id, array $validated, array $raw, int $order): void
+    {
+        $payload = array_merge($validated, [
+            'sort_order' => $order,
+        ]);
+
+        if ($id) {
+            $item = $cv->customSections()->where('id', $id)->first();
+            if ($item) {
+                $item->update($payload);
+                return;
+            }
+        }
+
+        $cv->customSections()->create($payload);
+    }
+
+    /**
      * Store a new repeatable record for a section.
      */
     public function storeItem(Request $request, Cv $cv, string $section)

@@ -3,6 +3,100 @@
 @section('title', 'Document Builder: ' . $cv->title)
 
 @section('content')
+<style>
+    /* Flexible Builder Workspace Layout */
+    .builder-split-workspace {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    #builderNavSidebar {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+        flex: 0 0 220px;
+        transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        position: sticky;
+        top: 80px;
+        z-index: 10;
+    }
+
+    #builderNavSidebar.sidebar-collapsed {
+        width: 58px;
+        min-width: 58px;
+        max-width: 58px;
+        flex: 0 0 58px;
+    }
+
+    #builderNavSidebar.sidebar-collapsed .sidebar-header-title {
+        display: none !important;
+    }
+
+    #builderNavSidebar.sidebar-collapsed .sidebar-header {
+        justify-content: center !important;
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+    }
+
+    #builderNavSidebar.sidebar-collapsed .sidebar-link {
+        justify-content: center !important;
+        padding: 0.6rem 0.25rem !important;
+        text-align: center;
+    }
+
+    #builderNavSidebar.sidebar-collapsed .sidebar-link-text,
+    #builderNavSidebar.sidebar-collapsed .sidebar-badge,
+    #builderNavSidebar.sidebar-collapsed .sidebar-check {
+        display: none !important;
+    }
+
+    #builderNavSidebar.sidebar-collapsed .sidebar-link i {
+        font-size: 1.15rem;
+        margin: 0 !important;
+    }
+
+    .builder-form-content {
+        flex: 1 1 0%;
+        min-width: 0;
+        transition: all 0.2s ease;
+    }
+
+    /* Repeatable Sections UX Elements */
+    .repeatable-card {
+        transition: all 0.2s ease;
+        border: 1px solid var(--saas-border, #e2e8f0);
+        background: #ffffff;
+    }
+
+    .repeatable-card:hover {
+        border-color: #cbd5e1;
+    }
+
+    .repeatable-card.is-new-entry {
+        border-left: 3px solid #0284c7 !important;
+    }
+
+    .sticky-action-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 9;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(8px);
+        border-top: 1px solid #e2e8f0;
+        padding: 0.85rem 1.25rem;
+        margin: 1.5rem -1.5rem -1.5rem -1.5rem;
+        border-bottom-left-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+    }
+</style>
+
 <div class="builder-workspace-container">
     <!-- Top Workspace Header -->
     <div class="card card-saas mb-3 p-3 shadow-sm border">
@@ -75,7 +169,7 @@
         </div>
     </div>
 
-    <!-- Main Workspace: Split-Screen on Desktop (Left ~58-60%, Right ~40-42%) -->
+    <!-- Main Workspace: Adaptive Responsive Layout on Desktop -->
     <div class="row g-3">
         <!-- LEFT COLUMN: Builder Navigation & Active Section Form -->
         <div class="col-lg-7" id="builderFormCol">
@@ -94,55 +188,68 @@
                 </select>
             </div>
 
-            <div class="row g-3">
+            <!-- Desktop Collapsible Split Workspace -->
+            <div class="builder-split-workspace d-none d-lg-flex">
                 <!-- Section Sidebar Navigation (Desktop) -->
-                <div class="col-md-4 d-none d-lg-block">
-                    <div class="card card-saas sticky-top shadow-sm" style="top: 80px;">
-                        <div class="card-header bg-white border-bottom py-2 px-3">
-                            <span class="small fw-bold text-uppercase text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                                {{ $isLetter ? 'Letter Sections' : 'CV Sections' }}
-                            </span>
-                        </div>
-                        <div class="list-group list-group-flush p-1">
-                            @foreach($checklist as $key => $sec)
-                                <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => $key]) }}" 
-                                   class="list-group-item list-group-item-action d-flex align-items-center justify-content-between rounded-2 px-3 py-2 mb-1 border-0 {{ $activeSection === $key ? 'bg-dark text-white fw-semibold' : 'text-secondary' }}"
-                                   style="transition: all 0.15s ease; font-size: 0.84rem;">
-                                    <div class="d-flex align-items-center gap-2 text-truncate">
-                                        <i class="bi {{ $sec['icon'] }} {{ $activeSection === $key ? 'text-white' : 'text-muted' }}"></i>
-                                        <span class="text-truncate">{{ $sec['label'] }}</span>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-1">
-                                        @if($sec['count'] > 0 && !in_array($key, ['personal-info', 'summary', 'letter-details', 'letter-content', 'letter-closing']))
-                                            <span class="badge {{ $activeSection === $key ? 'bg-light text-dark' : 'bg-surface-muted text-muted' }}" style="font-size: 0.68rem;">
-                                                {{ $sec['count'] }}
-                                            </span>
-                                        @endif
-                                        @if($sec['is_complete'])
-                                            <i class="bi bi-check-circle-fill {{ $activeSection === $key ? 'text-white' : 'text-success' }}" style="font-size: 0.75rem;"></i>
-                                        @endif
-                                    </div>
-                                </a>
-                            @endforeach
-
-                            <!-- Design Customization Nav Item -->
-                            <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => 'customization']) }}" 
-                               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between rounded-2 px-3 py-2 mt-2 border-top {{ $activeSection === 'customization' ? 'bg-dark text-white fw-semibold' : 'text-primary' }}"
+                <div class="card card-saas shadow-sm" id="builderNavSidebar">
+                    <div class="card-header bg-white border-bottom py-2 px-2 d-flex align-items-center justify-content-between sidebar-header">
+                        <span class="small fw-bold text-uppercase text-muted sidebar-header-title text-truncate" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                            {{ $isLetter ? 'Letter Sections' : 'CV Sections' }}
+                        </span>
+                        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-muted" id="sidebarToggleBtn" onclick="toggleSidebarCollapse()" title="Collapse Sidebar" aria-label="Toggle CV Sections Sidebar">
+                            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
+                        </button>
+                    </div>
+                    <div class="list-group list-group-flush p-1">
+                        @foreach($checklist as $key => $sec)
+                            <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => $key]) }}" 
+                               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between rounded-2 px-3 py-2 mb-1 border-0 sidebar-link {{ $activeSection === $key ? 'bg-dark text-white fw-semibold' : 'text-secondary' }}"
+                               title="{{ $sec['label'] }}"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="right"
                                style="transition: all 0.15s ease; font-size: 0.84rem;">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-palette {{ $activeSection === 'customization' ? 'text-white' : 'text-primary' }}"></i>
-                                    <span>Design & Colors</span>
+                                <div class="d-flex align-items-center gap-2 text-truncate">
+                                    <i class="bi {{ $sec['icon'] }} {{ $activeSection === $key ? 'text-white' : 'text-muted' }}"></i>
+                                    <span class="text-truncate sidebar-link-text">{{ $sec['label'] }}</span>
                                 </div>
-                                <span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem;">Styles</span>
+                                <div class="d-flex align-items-center gap-1 sidebar-badge">
+                                    @if($sec['count'] > 0 && !in_array($key, ['personal-info', 'summary', 'letter-details', 'letter-content', 'letter-closing']))
+                                        <span class="badge {{ $activeSection === $key ? 'bg-light text-dark' : 'bg-surface-muted text-muted' }}" style="font-size: 0.68rem;">
+                                            {{ $sec['count'] }}
+                                        </span>
+                                    @endif
+                                    @if($sec['is_complete'])
+                                        <i class="bi bi-check-circle-fill sidebar-check {{ $activeSection === $key ? 'text-white' : 'text-success' }}" style="font-size: 0.75rem;"></i>
+                                    @endif
+                                </div>
                             </a>
-                        </div>
+                        @endforeach
+
+                        <!-- Design Customization Nav Item -->
+                        <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => 'customization']) }}" 
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between rounded-2 px-3 py-2 mt-2 border-top sidebar-link {{ $activeSection === 'customization' ? 'bg-dark text-white fw-semibold' : 'text-primary' }}"
+                           title="Design & Colors"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="right"
+                           style="transition: all 0.15s ease; font-size: 0.84rem;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-palette {{ $activeSection === 'customization' ? 'text-white' : 'text-primary' }}"></i>
+                                <span class="sidebar-link-text">Design & Colors</span>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary sidebar-badge" style="font-size: 0.65rem;">Styles</span>
+                        </a>
                     </div>
                 </div>
 
                 <!-- Active Form Workspace -->
-                <div class="col-md-8 col-lg-8">
+                <div class="builder-form-content" id="builderFormContent">
                     @include('cvs.builder.sections.' . $activeSection)
                 </div>
+            </div>
+
+            <!-- Mobile Active Form Workspace (< lg) -->
+            <div class="d-lg-none">
+                @include('cvs.builder.sections.' . $activeSection)
             </div>
         </div>
 
@@ -1035,6 +1142,217 @@
 
         const selectAllSkillsBtn = document.getElementById('aiSelectAllSkillsBtn');
         if (selectAllSkillsBtn) selectAllSkillsBtn.addEventListener('click', toggleSelectAllSkills);
+
+        // Initialize Sidebar & Repeatable UI
+        initSidebarCollapse();
+        initRepeatableForms();
+        initBootstrapTooltips();
     });
+
+    // ==========================================
+    // Collapsible CV Sections Sidebar Engine
+    // ==========================================
+    const SIDEBAR_STORAGE_KEY = 'cvmaker_builder_sidebar_collapsed';
+
+    function initSidebarCollapse() {
+        const savedState = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+        const isCollapsed = savedState === 'true';
+        applySidebarState(isCollapsed, false);
+    }
+
+    function toggleSidebarCollapse() {
+        const sidebar = document.getElementById('builderNavSidebar');
+        if (!sidebar) return;
+        const willCollapse = !sidebar.classList.contains('sidebar-collapsed');
+        applySidebarState(willCollapse, true);
+    }
+
+    function applySidebarState(collapsed, saveToStorage = true) {
+        const sidebar = document.getElementById('builderNavSidebar');
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        const toggleIcon = document.getElementById('sidebarToggleIcon');
+
+        if (!sidebar) return;
+
+        if (collapsed) {
+            sidebar.classList.add('sidebar-collapsed');
+            if (toggleIcon) toggleIcon.className = 'bi bi-chevron-right';
+            if (toggleBtn) {
+                toggleBtn.setAttribute('title', 'Expand Sidebar');
+                toggleBtn.setAttribute('aria-label', 'Expand Sidebar');
+            }
+            if (saveToStorage) localStorage.setItem(SIDEBAR_STORAGE_KEY, 'true');
+        } else {
+            sidebar.classList.remove('sidebar-collapsed');
+            if (toggleIcon) toggleIcon.className = 'bi bi-chevron-left';
+            if (toggleBtn) {
+                toggleBtn.setAttribute('title', 'Collapse Sidebar');
+                toggleBtn.setAttribute('aria-label', 'Collapse Sidebar');
+            }
+            if (saveToStorage) localStorage.setItem(SIDEBAR_STORAGE_KEY, 'false');
+        }
+
+        // Re-initialize tooltips for updated sidebar links
+        setTimeout(initBootstrapTooltips, 250);
+    }
+
+    function initBootstrapTooltips() {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                const existing = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+                if (existing) existing.dispose();
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+    }
+
+    // ==========================================
+    // Repeatable Sections Client Engine
+    // ==========================================
+    let isRepeatableDirty = false;
+    let isSubmitting = false;
+
+    function markRepeatableDirty() {
+        isRepeatableDirty = true;
+    }
+
+    function initRepeatableForms() {
+        document.querySelectorAll('form[data-repeatable-form]').forEach(form => {
+            form.addEventListener('submit', () => {
+                isSubmitting = true;
+                isRepeatableDirty = false;
+            });
+
+            form.querySelectorAll('input, select, textarea').forEach(input => {
+                input.addEventListener('input', () => {
+                    markRepeatableDirty();
+                });
+            });
+        });
+
+        // Initialize counters & reorder buttons across containers
+        document.querySelectorAll('.repeatable-entries-container').forEach(container => {
+            updateRepeatableNumbers(container.id);
+        });
+
+        window.addEventListener('beforeunload', (e) => {
+            if (isRepeatableDirty && !isSubmitting) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    }
+
+    function addRepeatableEntry(containerId, templateId) {
+        const container = document.getElementById(containerId);
+        const template = document.getElementById(templateId);
+        if (!container || !template) return;
+
+        // Hide empty placeholder message if visible
+        const emptyState = container.querySelector('.repeatable-empty-state');
+        if (emptyState) emptyState.classList.add('d-none');
+
+        const tempKey = 'temp_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        let html = template.innerHTML.replace(/__INDEX__/g, tempKey);
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html.trim();
+        const newCard = tempDiv.firstElementChild;
+        if (!newCard) return;
+
+        newCard.classList.add('is-new-entry');
+        container.appendChild(newCard);
+
+        updateRepeatableNumbers(containerId);
+        markRepeatableDirty();
+
+        // Bind input listeners for live dirty tracking & autosave
+        newCard.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('input', markRepeatableDirty);
+        });
+
+        // Scroll to and focus first input
+        newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const firstInput = newCard.querySelector('input:not([type="hidden"]), select, textarea');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 150);
+        }
+    }
+
+    function removeRepeatableEntry(btn, confirmMsg = '') {
+        const card = btn.closest('.repeatable-card');
+        if (!card) return;
+
+        if (confirmMsg && !confirm(confirmMsg)) {
+            return;
+        }
+
+        const form = card.closest('form');
+        const idInput = card.querySelector('input[name$="[id]"]');
+
+        // If existing saved record, append hidden input to track deletion on save
+        if (idInput && idInput.value && !idInput.value.startsWith('temp_')) {
+            if (form) {
+                const hiddenDel = document.createElement('input');
+                hiddenDel.type = 'hidden';
+                hiddenDel.name = 'deleted_ids[]';
+                hiddenDel.value = idInput.value;
+                form.appendChild(hiddenDel);
+            }
+        }
+
+        const container = card.closest('.repeatable-entries-container');
+        card.remove();
+
+        if (container) {
+            updateRepeatableNumbers(container.id);
+            // If no cards left, reveal empty state
+            const remainingCards = container.querySelectorAll('.repeatable-card');
+            if (remainingCards.length === 0) {
+                const emptyState = container.querySelector('.repeatable-empty-state');
+                if (emptyState) emptyState.classList.remove('d-none');
+            }
+        }
+
+        markRepeatableDirty();
+    }
+
+    function moveRepeatableEntry(btn, direction) {
+        const card = btn.closest('.repeatable-card');
+        if (!card) return;
+
+        const container = card.closest('.repeatable-entries-container');
+        if (!container) return;
+
+        if (direction === 'up' && card.previousElementSibling && card.previousElementSibling.classList.contains('repeatable-card')) {
+            container.insertBefore(card, card.previousElementSibling);
+        } else if (direction === 'down' && card.nextElementSibling && card.nextElementSibling.classList.contains('repeatable-card')) {
+            container.insertBefore(card.nextElementSibling, card);
+        }
+
+        updateRepeatableNumbers(container.id);
+        markRepeatableDirty();
+    }
+
+    function updateRepeatableNumbers(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.repeatable-card');
+        cards.forEach((card, index) => {
+            const numBadge = card.querySelector('.entry-number-badge');
+            if (numBadge) numBadge.innerText = `#${index + 1}`;
+
+            const sortOrderInput = card.querySelector('input[name$="[sort_order]"]');
+            if (sortOrderInput) sortOrderInput.value = index + 1;
+
+            const upBtn = card.querySelector('.btn-move-up');
+            if (upBtn) upBtn.disabled = (index === 0);
+
+            const downBtn = card.querySelector('.btn-move-down');
+            if (downBtn) downBtn.disabled = (index === cards.length - 1);
+        });
+    }
 </script>
 @endpush
