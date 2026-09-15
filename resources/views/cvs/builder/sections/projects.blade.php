@@ -147,8 +147,32 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label class="form-label small">Project Description & Results</label>
-                            <textarea name="description" class="form-control form-control-sm" rows="3" placeholder="Briefly describe the purpose of the project, technical challenges solved, and key features...">{{ old('description', $editItem?->description) }}</textarea>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small mb-0 fw-semibold">Project Description & Results</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-dark py-0 px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem;">
+                                        <i class="bi bi-stars me-1 text-primary"></i> AI Assistant
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-saas dropdown-menu-end shadow-sm">
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerProjAi('describe')">
+                                                <i class="bi bi-card-text me-2"></i> Generate Description
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerProjAi('bullets')">
+                                                <i class="bi bi-list-task me-2"></i> Generate Technical Bullets
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerProjAi('concise')">
+                                                <i class="bi bi-text-paragraph me-2"></i> Make Concise
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <textarea name="description" id="projDescriptionInput" class="form-control form-control-sm" rows="4" placeholder="Briefly describe the purpose of the project, technical challenges solved, and key features...">{{ old('description', $editItem?->description) }}</textarea>
                         </div>
                     </div>
 
@@ -165,3 +189,22 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function triggerProjAi(mode) {
+        const form = document.querySelector('#projectFormCard form');
+        const titleInput = form ? form.querySelector('input[name="title"]') : null;
+        const techInput = form ? form.querySelector('input[name="technologies"]') : null;
+        const descInput = document.getElementById('projDescriptionInput');
+
+        openAiAssistant('project_rewrite', {
+            target_input_id: 'projDescriptionInput',
+            project_name: titleInput ? titleInput.value : '',
+            technologies: techInput ? techInput.value : '',
+            draft: descInput ? descInput.value : '',
+            mode: mode
+        });
+    }
+</script>
+@endpush

@@ -159,8 +159,40 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label class="form-label small">Responsibilities & Impact</label>
-                            <textarea name="description" class="form-control form-control-sm" rows="4" placeholder="Describe your key contributions, technologies used, and measurable results...">{{ old('description', $editItem?->description) }}</textarea>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label small mb-0 fw-semibold">Responsibilities & Impact</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-dark py-0 px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem;">
+                                        <i class="bi bi-stars me-1 text-primary"></i> AI Assistant
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-saas dropdown-menu-end shadow-sm">
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerExpAi('bullets')">
+                                                <i class="bi bi-list-task me-2"></i> Generate Bullet Points
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerExpAi('improve')">
+                                                <i class="bi bi-spellcheck me-2"></i> Improve & Polish Writing
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerExpAi('professional')">
+                                                <i class="bi bi-briefcase me-2"></i> Make Professional & Formal
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item dropdown-item-saas" onclick="triggerExpAi('concise')">
+                                                <i class="bi bi-text-paragraph me-2"></i> Make Concise
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <textarea name="description" id="expDescriptionInput" class="form-control form-control-sm" rows="5" placeholder="Describe your key contributions, technologies used, and measurable results...">{{ old('description', $editItem?->description) }}</textarea>
+                            <div class="form-text text-muted small" style="font-size: 0.72rem;">
+                                Tip: You can type raw notes (e.g. "built laravel api, improved mysql query speed") and use <strong>AI Assistant</strong> to format it into professional bullet points.
+                            </div>
                         </div>
                     </div>
 
@@ -177,3 +209,22 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function triggerExpAi(mode) {
+        const form = document.querySelector('#experienceFormCard form');
+        const posInput = form ? form.querySelector('input[name="job_title"]') : null;
+        const empInput = form ? form.querySelector('input[name="employer"]') : null;
+        const descInput = document.getElementById('expDescriptionInput');
+
+        openAiAssistant('experience_rewrite', {
+            target_input_id: 'expDescriptionInput',
+            position: posInput ? posInput.value : '',
+            company: empInput ? empInput.value : '',
+            draft: descInput ? descInput.value : '',
+            mode: mode
+        });
+    }
+</script>
+@endpush

@@ -6,11 +6,16 @@
             </h2>
             <p class="text-muted small mb-0 mt-1">Add technical, leadership, or specialized skills with flexible rating & level representation.</p>
         </div>
-        @if(!$editItem)
-            <a href="#skillFormCard" class="btn-saas-primary btn-sm">
-                <i class="bi bi-plus-lg"></i> Add Skill
-            </a>
-        @endif
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="openAiAssistant('skills_suggestion', {})">
+                <i class="bi bi-stars me-1 text-primary"></i> Suggest Skills with AI
+            </button>
+            @if(!$editItem)
+                <a href="#skillFormCard" class="btn-saas-primary btn-sm">
+                    <i class="bi bi-plus-lg"></i> Add Skill
+                </a>
+            @endif
+        </div>
     </div>
     <div class="card-body p-4">
         <!-- Existing Records List -->

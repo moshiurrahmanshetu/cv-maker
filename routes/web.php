@@ -82,6 +82,19 @@ Route::middleware('auth')->group(function () {
             Route::delete('/items/{section}/{id}', [CvBuilderController::class, 'deleteItem'])->name('items.destroy');
             Route::post('/items/{section}/reorder', [CvBuilderController::class, 'reorderItems'])->name('items.reorder');
             Route::post('/references/{id}/toggle-visibility', [CvBuilderController::class, 'toggleReferenceVisibility'])->name('references.toggle-visibility');
+
+            // Phase 5: AI Career Assistant Endpoints
+            Route::prefix('ai')->name('ai.')->group(function () {
+                Route::post('/summary', [\App\Http\Controllers\AiAssistantController::class, 'generateSummary'])->name('summary');
+                Route::post('/objective', [\App\Http\Controllers\AiAssistantController::class, 'generateObjective'])->name('objective');
+                Route::post('/experience', [\App\Http\Controllers\AiAssistantController::class, 'rewriteExperience'])->name('experience');
+                Route::post('/project', [\App\Http\Controllers\AiAssistantController::class, 'rewriteProject'])->name('project');
+                Route::post('/skills', [\App\Http\Controllers\AiAssistantController::class, 'suggestSkills'])->name('skills');
+                Route::post('/skills/append', [\App\Http\Controllers\AiAssistantController::class, 'appendSkills'])->name('skills.append');
+                Route::post('/improve', [\App\Http\Controllers\AiAssistantController::class, 'improveContent'])->name('improve');
+                Route::post('/cover-letter', [\App\Http\Controllers\AiAssistantController::class, 'generateCoverLetter'])->name('cover-letter');
+                Route::post('/motivation-letter', [\App\Http\Controllers\AiAssistantController::class, 'generateMotivationLetter'])->name('motivation-letter');
+            });
         });
     });
 
@@ -103,6 +116,9 @@ Route::middleware('auth')->group(function () {
         // Document Types Management
         Route::resource('document-types', AdminDocumentTypeController::class)->except(['show']);
         Route::post('document-types/{documentType}/toggle-status', [AdminDocumentTypeController::class, 'toggleStatus'])->name('document-types.toggle-status');
+
+        // Phase 5: AI Usage & Telemetry Management
+        Route::get('/ai', [\App\Http\Controllers\Admin\AdminAiController::class, 'index'])->name('ai.index');
 
         // Template Categories Management
         Route::prefix('templates')->name('templates.')->group(function () {

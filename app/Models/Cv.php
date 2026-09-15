@@ -106,6 +106,11 @@ class Cv extends Model
         return $this->hasMany(CvCustomSection::class, 'cv_id')->orderBy('sort_order');
     }
 
+    public function aiUsageLogs(): HasMany
+    {
+        return $this->hasMany(AiUsageLog::class, 'cv_id');
+    }
+
     public function isDraft(): bool
     {
         return $this->status === 'draft';

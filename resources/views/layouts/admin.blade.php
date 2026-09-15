@@ -60,6 +60,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('admin.ai.index') }}" class="sidebar-link {{ request()->routeIs('admin.ai.*') ? 'active' : '' }}" title="AI Assistant Logs">
+                        <i class="bi bi-robot"></i>
+                        <span class="nav-item-text">AI Assistant</span>
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('admin.templates.index') }}" class="sidebar-link {{ request()->routeIs('admin.templates.index', 'admin.templates.create', 'admin.templates.edit') ? 'active' : '' }}" title="CV Templates">
                         <i class="bi bi-palette"></i>
                         <span class="nav-item-text">Templates</span>
@@ -129,6 +135,12 @@
                         <a href="{{ route('admin.document-types.index') }}" class="sidebar-link {{ request()->routeIs('admin.document-types.*') ? 'active' : '' }}">
                             <i class="bi bi-file-earmark-ruled"></i>
                             <span>Document Types</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.ai.index') }}" class="sidebar-link {{ request()->routeIs('admin.ai.*') ? 'active' : '' }}">
+                            <i class="bi bi-robot"></i>
+                            <span>AI Assistant</span>
                         </a>
                     </li>
                     <li>

@@ -3,7 +3,7 @@
 @endphp
 
 <div class="card card-saas">
-    <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+    <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
             <h2 class="h6 fw-bold mb-0 text-dark">
                 <i class="bi bi-file-earmark-richtext me-2 text-muted"></i>
@@ -12,6 +12,11 @@
             <p class="text-muted small mb-0 mt-1">
                 {{ $isMotivation ? 'Articulate your core motivation, relevant academic/industry preparation, and career ambitions.' : 'Draft your opening statement, body paragraphs highlighting key achievements, and compelling call-to-action.' }}
             </p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="openAiAssistant('{{ $isMotivation ? 'motivation_letter' : 'cover_letter' }}', {})">
+                <i class="bi bi-stars me-1 text-primary"></i> Generate Full Letter with AI
+            </button>
         </div>
     </div>
     <div class="card-body p-4">

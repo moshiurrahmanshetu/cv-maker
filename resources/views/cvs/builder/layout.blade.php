@@ -243,6 +243,8 @@
         </div>
     </div>
 </div>
+
+@include('components.ai-assistant-modal')
 @endsection
 
 @push('scripts')
@@ -422,5 +424,617 @@
 
         triggerAutosave({ settings: settings });
     }
+
+    // ==========================================
+    // Phase 5: AI Career Document Assistant Client
+    // ==========================================
+    const AI_ENDPOINTS = {
+        summary: '{{ route("cvs.builder.ai.summary", $cv) }}',
+        objective: '{{ route("cvs.builder.ai.objective", $cv) }}',
+        experience: '{{ route("cvs.builder.ai.experience", $cv) }}',
+        project: '{{ route("cvs.builder.ai.project", $cv) }}',
+        skills: '{{ route("cvs.builder.ai.skills", $cv) }}',
+        skills_append: '{{ route("cvs.builder.ai.skills.append", $cv) }}',
+        improve: '{{ route("cvs.builder.ai.improve", $cv) }}',
+        cover_letter: '{{ route("cvs.builder.ai.cover-letter", $cv) }}',
+        motivation_letter: '{{ route("cvs.builder.ai.motivation-letter", $cv) }}'
+    };
+
+    let currentAiFeature = 'summary';
+    let currentAiOptions = {};
+    let currentAiResponseData = null;
+    let currentAiVariants = {};
+    let activeAiVariantKey = 'professional';
+
+    function normalizeAiFeatureKey(feature) {
+        const map = {
+            'summary': 'summary',
+            'profile_summary': 'summary',
+            'objective': 'objective',
+            'career_objective': 'objective',
+            'experience': 'experience',
+            'experience_rewrite': 'experience',
+            'experience-rewrite': 'experience',
+            'experience-bullets': 'experience',
+            'project': 'project',
+            'project_rewrite': 'project',
+            'project-rewrite': 'project',
+            'project-bullets': 'project',
+            'skills': 'skills',
+            'skill_suggestions': 'skills',
+            'skills_suggestion': 'skills',
+            'skill-suggestions': 'skills',
+            'improve': 'improve',
+            'content_improve': 'improve',
+            'improve-content': 'improve',
+            'cover_letter': 'cover_letter',
+            'cover-letter': 'cover_letter',
+            'motivation_letter': 'motivation_letter',
+            'motivation-letter': 'motivation_letter'
+        };
+        return map[feature] || 'summary';
+    }
+
+    function setAiModalState(state, errorMessage = '') {
+        const inputState = document.getElementById('aiStateInput');
+        const genState = document.getElementById('aiStateGenerating');
+        const resultsState = document.getElementById('aiStateResults');
+        const errState = document.getElementById('aiStateError');
+
+        if (inputState) inputState.classList.toggle('d-none', state !== 'input');
+        if (genState) genState.classList.toggle('d-none', state !== 'generating');
+        if (resultsState) resultsState.classList.toggle('d-none', state !== 'results');
+        if (errState) {
+            errState.classList.toggle('d-none', state !== 'error');
+            if (errorMessage) {
+                const msgEl = document.getElementById('aiErrorMessage');
+                if (msgEl) msgEl.innerText = errorMessage;
+            }
+        }
+    }
+
+    function openAiAssistant(feature, options = {}) {
+        const normalized = normalizeAiFeatureKey(feature);
+        currentAiFeature = normalized;
+        currentAiOptions = options;
+        currentAiResponseData = null;
+        currentAiVariants = {};
+
+        const titleEl = document.getElementById('aiAssistantModalLabel');
+        const subEl = document.getElementById('aiAssistantSubtitle');
+        const guideTitle = document.getElementById('aiContextGuideTitle');
+        const guideText = document.getElementById('aiContextGuideText');
+        const container = document.getElementById('aiDynamicFieldsContainer');
+
+        let title = 'AI Career Assistant';
+        let sub = 'Tailored career document enhancement';
+        let guideT = 'Customize AI Context';
+        let guideDesc = 'Provide details to guide the AI generation. Document history will automatically be referenced.';
+        let fieldsHtml = '';
+
+        if (normalized === 'summary') {
+            title = 'AI Profile Summary Generator';
+            sub = 'Generate 3 high-impact summary variants for your target career role.';
+            guideT = 'Target Role & Experience';
+            guideDesc = 'Specify your target role and years of experience to tailor the summary tone and keywords.';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Target Position / Title</label>
+                        <input type="text" name="target_position" class="form-control form-control-sm" value="${options.target_position || '{{ $cv->personalInfo?->job_title ?? $cv->title }}'}" placeholder="e.g. Senior Software Architect">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Years of Experience</label>
+                        <input type="text" name="years_of_experience" class="form-control form-control-sm" placeholder="e.g. 7+ years">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Industry / Specialization</label>
+                        <input type="text" name="industry" class="form-control form-control-sm" placeholder="e.g. Cloud Infrastructure / SaaS">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Key Skills to Highlight</label>
+                        <input type="text" name="key_skills" class="form-control form-control-sm" placeholder="e.g. Laravel, AWS, Team Leadership">
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'objective') {
+            title = 'AI Career Objective Generator';
+            sub = 'Craft forward-looking career objective statements.';
+            guideT = 'Career Trajectory';
+            guideDesc = 'Define your target aspiration and core competencies.';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Target Position / Aspiring Role</label>
+                        <input type="text" name="target_position" class="form-control form-control-sm" value="${options.target_position || '{{ $cv->personalInfo?->job_title ?? $cv->title }}'}" placeholder="e.g. Lead Product Engineer">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Key Skills / Focus Areas</label>
+                        <input type="text" name="key_skills" class="form-control form-control-sm" placeholder="e.g. Scalable Systems, Full-Stack Architecture">
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'experience') {
+            title = 'AI Work Experience Enhancement';
+            sub = 'Generate quantified accomplishment bullets or polish job descriptions.';
+            guideT = 'Position & Raw Contributions';
+            guideDesc = 'Enter your role details and any raw notes to convert into professional bullet points.';
+            const mode = options.mode || 'bullets';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Job Title / Role</label>
+                        <input type="text" name="position" class="form-control form-control-sm" value="${(options.position || '').replace(/"/g, '&quot;')}" placeholder="e.g. Senior Software Engineer">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Company / Employer</label>
+                        <input type="text" name="company" class="form-control form-control-sm" value="${(options.company || '').replace(/"/g, '&quot;')}" placeholder="e.g. Stripe, Acme Corp">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Generation Mode</label>
+                        <select name="mode" class="form-select form-select-sm">
+                            <option value="bullets" ${mode === 'bullets' ? 'selected' : ''}>Quantified Action-Oriented Bullet Points</option>
+                            <option value="improve" ${mode === 'improve' ? 'selected' : ''}>Improve & Polish Existing Phrasing</option>
+                            <option value="professional" ${mode === 'professional' ? 'selected' : ''}>Executive & Formal Tone</option>
+                            <option value="concise" ${mode === 'concise' ? 'selected' : ''}>Concise & Crisp</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Raw Notes or Existing Draft (Optional)</label>
+                        <textarea name="draft" class="form-control form-control-sm font-monospace" rows="3" placeholder="e.g. led migration to microservices, improved latency by 35%, managed 5 devs">${options.draft || options.current_text || ''}</textarea>
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'project') {
+            title = 'AI Project Description & Bullets';
+            sub = 'Highlight technical scope, architectural achievements, and project results.';
+            const mode = options.mode || 'describe';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Project Name</label>
+                        <input type="text" name="project_name" class="form-control form-control-sm" value="${(options.project_name || '').replace(/"/g, '&quot;')}" placeholder="e.g. Real-time Analytics Engine">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Technologies & Stack</label>
+                        <input type="text" name="technologies" class="form-control form-control-sm" value="${(options.technologies || '').replace(/"/g, '&quot;')}" placeholder="e.g. Laravel, Redis, MySQL, Docker">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Generation Mode</label>
+                        <select name="mode" class="form-select form-select-sm">
+                            <option value="describe" ${mode === 'describe' ? 'selected' : ''}>Full Project Description</option>
+                            <option value="bullets" ${mode === 'bullets' ? 'selected' : ''}>Technical Highlight Bullets</option>
+                            <option value="concise" ${mode === 'concise' ? 'selected' : ''}>Concise Summary</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Draft / Scope Notes (Optional)</label>
+                        <textarea name="draft" class="form-control form-control-sm font-monospace" rows="3" placeholder="Brief outline of architecture, challenges solved, or results...">${options.draft || ''}</textarea>
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'skills') {
+            title = 'AI Skill Suggestions';
+            sub = 'Discover hard and soft skills tailored for your target role and document context.';
+            guideT = 'Target Role & Categorization';
+            guideDesc = 'Specify your target role or leave blank to infer automatically from your CV.';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Target Position / Field</label>
+                        <input type="text" name="target_position" class="form-control form-control-sm" value="{{ $cv->personalInfo?->job_title ?? $cv->title }}" placeholder="e.g. Full-Stack Developer">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Skill Category Focus (Optional)</label>
+                        <input type="text" name="category" class="form-control form-control-sm" placeholder="e.g. Backend, Cloud, Management">
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'improve') {
+            title = 'AI Content & ATS Improver';
+            sub = 'Refine phrasing, elevate vocabulary, and optimize keyword density.';
+            guideT = 'Text Enhancement Settings';
+            guideDesc = 'Select an optimization style and review your text before generating.';
+            const tone = options.tone || 'professional';
+            const initialText = options.text || (options.target_input_id && document.getElementById(options.target_input_id) ? document.getElementById(options.target_input_id).value : '');
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Optimization Focus / Tone</label>
+                        <select name="tone" class="form-select form-select-sm">
+                            <option value="professional" ${tone === 'professional' ? 'selected' : ''}>Professional & Polished</option>
+                            <option value="ats" ${tone === 'ats' ? 'selected' : ''}>ATS-Friendly & Keyword Dense</option>
+                            <option value="concise" ${tone === 'concise' ? 'selected' : ''}>Crisp & Concise</option>
+                            <option value="impactful" ${tone === 'impactful' ? 'selected' : ''}>Action-Verb & Impact Focused</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Content to Improve <span class="text-danger">*</span></label>
+                        <textarea name="text" class="form-control form-control-sm font-monospace" rows="5" required placeholder="Paste or type text to improve...">${initialText}</textarea>
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'cover_letter') {
+            title = 'AI Cover Letter Generator';
+            sub = 'Draft a structured, persuasive cover letter tailored to your target job.';
+            guideT = 'Target Job & Company Details';
+            guideDesc = 'Provide the role and company you are applying for to generate tailored motivation and qualifications.';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Target Job Title <span class="text-danger">*</span></label>
+                        <input type="text" name="job_title" class="form-control form-control-sm" value="{{ $cv->personalInfo?->job_title ?? $cv->title }}" placeholder="e.g. Senior Software Engineer" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Company / Employer Name</label>
+                        <input type="text" name="company_name" class="form-control form-control-sm" placeholder="e.g. Acme Corp">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Recipient Name / Title</label>
+                        <input type="text" name="recipient_name" class="form-control form-control-sm" placeholder="e.g. Hiring Committee or Dr. Vance">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Key Strengths / Skills</label>
+                        <input type="text" name="key_skills" class="form-control form-control-sm" placeholder="e.g. Distributed Systems, Team Leadership">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Specific Notes or Job Posting Excerpt (Optional)</label>
+                        <textarea name="additional_notes" class="form-control form-control-sm font-monospace" rows="3" placeholder="Paste key requirements or company mission points to align with..."></textarea>
+                    </div>
+                </div>
+            `;
+        } else if (normalized === 'motivation_letter') {
+            title = 'AI Motivation Letter Generator';
+            sub = 'Draft a persuasive motivation letter highlighting academic & career aspirations.';
+            guideT = 'Academic Program / Target Institution';
+            guideDesc = 'Enter target program details and your academic/research goals.';
+            fieldsHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Target Program / Position <span class="text-danger">*</span></label>
+                        <input type="text" name="job_title" class="form-control form-control-sm" placeholder="e.g. M.Sc. in Computer Science" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">University / Institution Name</label>
+                        <input type="text" name="company_name" class="form-control form-control-sm" placeholder="e.g. Technical University of Munich">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-muted">Academic Goals & Research Focus</label>
+                        <textarea name="goals" class="form-control form-control-sm font-monospace" rows="3" placeholder="Outline your research interests, thesis goals, or long-term vision..."></textarea>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (titleEl) titleEl.innerText = title;
+        if (subEl) subEl.innerText = sub;
+        if (guideTitle) guideTitle.innerText = guideT;
+        if (guideText) guideText.innerText = guideDesc;
+        if (container) container.innerHTML = fieldsHtml;
+
+        setAiModalState('input');
+
+        const modalEl = document.getElementById('aiAssistantModal');
+        if (modalEl) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }
+
+    // Submit AI Generation
+    function submitAiGeneration() {
+        const form = document.getElementById('aiPromptForm');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((val, key) => {
+            payload[key] = val;
+        });
+
+        // Validation for required fields
+        if (currentAiFeature === 'improve' && (!payload.text || !payload.text.trim())) {
+            alert('Please enter or paste the text you would like to improve.');
+            return;
+        }
+        if ((currentAiFeature === 'cover_letter' || currentAiFeature === 'motivation_letter') && (!payload.job_title || !payload.job_title.trim())) {
+            alert('Please enter a target job title or program name.');
+            return;
+        }
+
+        setAiModalState('generating');
+
+        const endpoint = AI_ENDPOINTS[currentAiFeature] || AI_ENDPOINTS.summary;
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data: data })))
+        .then(({ ok, status, data }) => {
+            if (!ok || !data.success) {
+                setAiModalState('error', data.message || 'Generation failed. Please try again.');
+                return;
+            }
+
+            renderAiResults(data);
+        })
+        .catch(err => {
+            console.error('AI Request Error:', err);
+            setAiModalState('error', 'Network error or service unavailable. Your data is safe.');
+        });
+    }
+
+    // Render Generation Results in Modal
+    function renderAiResults(response) {
+        currentAiResponseData = response.data || {};
+        setAiModalState('results');
+
+        const variantsContainer = document.getElementById('aiVariantsTabsContainer');
+        const variantsNav = document.getElementById('aiVariantsNav');
+        const textarea = document.getElementById('aiResultEditableTextarea');
+        const structuredLetter = document.getElementById('aiStructuredLetterContainer');
+        const skillsGrid = document.getElementById('aiSkillsGridContainer');
+        const textareaCard = textarea?.closest('.card');
+
+        // Reset visibility
+        if (variantsContainer) variantsContainer.classList.add('d-none');
+        if (structuredLetter) structuredLetter.classList.add('d-none');
+        if (skillsGrid) skillsGrid.classList.add('d-none');
+        if (textareaCard) textareaCard.classList.remove('d-none');
+
+        // 1. Multi-Variant Results (Summary / Objective)
+        if (currentAiResponseData.variants && typeof currentAiResponseData.variants === 'object') {
+            currentAiVariants = currentAiResponseData.variants;
+            const keys = Object.keys(currentAiVariants);
+            if (keys.length > 0) {
+                if (variantsContainer && variantsNav) {
+                    variantsContainer.classList.remove('d-none');
+                    let navHtml = '';
+                    keys.forEach((key, idx) => {
+                        const label = key.charAt(0).toUpperCase() + key.slice(1);
+                        navHtml += `
+                            <li class="nav-item">
+                                <button type="button" class="nav-link ${idx === 0 ? 'active' : ''} py-1 px-3 small fw-semibold" onclick="selectAiVariant('${key}')">
+                                    ${label}
+                                </button>
+                            </li>
+                        `;
+                    });
+                    variantsNav.innerHTML = navHtml;
+                }
+                activeAiVariantKey = keys[0];
+                if (textarea) textarea.value = currentAiVariants[keys[0]];
+            }
+        } 
+        // 2. Skill Suggestions
+        else if (currentAiFeature === 'skills') {
+            if (textareaCard) textareaCard.classList.add('d-none');
+            if (skillsGrid) {
+                skillsGrid.classList.remove('d-none');
+                renderSkillsCheckboxes(currentAiResponseData);
+            }
+        } 
+        // 3. Cover / Motivation Letter
+        else if (currentAiFeature === 'cover_letter' || currentAiFeature === 'motivation_letter') {
+            if (structuredLetter) {
+                structuredLetter.classList.remove('d-none');
+                const salutationEl = document.getElementById('aiLetterSalutation');
+                const openingEl = document.getElementById('aiLetterOpening');
+                const bodyEl = document.getElementById('aiLetterBody');
+                const ctaEl = document.getElementById('aiLetterCallToAction');
+                const closingEl = document.getElementById('aiLetterClosing');
+                const sigEl = document.getElementById('aiLetterSignature');
+
+                if (salutationEl) salutationEl.value = currentAiResponseData.salutation || '';
+                if (openingEl) openingEl.value = currentAiResponseData.opening || '';
+                if (bodyEl) bodyEl.value = currentAiResponseData.body || '';
+                if (ctaEl) ctaEl.value = currentAiResponseData.call_to_action || '';
+                if (closingEl) closingEl.value = currentAiResponseData.closing || '';
+                if (sigEl) sigEl.value = currentAiResponseData.signature || '{{ Auth::user()->name }}';
+            }
+            if (textarea) {
+                textarea.value = currentAiResponseData.full_text || currentAiResponseData.text || currentAiResponseData.content || '';
+            }
+        } 
+        // 4. Standard Text / Bullets / Improved Content
+        else {
+            let content = '';
+            if (Array.isArray(currentAiResponseData.bullets)) {
+                content = currentAiResponseData.bullets.join('\n');
+            } else if (currentAiResponseData.bullets && typeof currentAiResponseData.bullets === 'string') {
+                content = currentAiResponseData.bullets;
+            } else {
+                content = currentAiResponseData.text || currentAiResponseData.content || '';
+            }
+            if (textarea) textarea.value = content;
+        }
+    }
+
+    function selectAiVariant(key) {
+        if (!currentAiVariants[key]) return;
+        activeAiVariantKey = key;
+        const textarea = document.getElementById('aiResultEditableTextarea');
+        if (textarea) textarea.value = currentAiVariants[key];
+
+        const navBtns = document.querySelectorAll('#aiVariantsNav .nav-link');
+        navBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.toLowerCase() === key.toLowerCase());
+        });
+    }
+
+    function renderSkillsCheckboxes(data) {
+        const list = document.getElementById('aiSkillsCheckboxesList');
+        if (!list) return;
+
+        let items = [];
+        if (Array.isArray(data.skills)) {
+            items = data.skills;
+        } else if (data.skills && typeof data.skills === 'object') {
+            // Grouped by categories
+            Object.keys(data.skills).forEach(cat => {
+                const sub = data.skills[cat];
+                if (Array.isArray(sub)) {
+                    sub.forEach(name => items.push({ name: name, category: cat }));
+                }
+            });
+        }
+
+        if (items.length === 0) {
+            list.innerHTML = '<div class="col-12 text-center text-muted py-2">No skills generated.</div>';
+            return;
+        }
+
+        let html = '';
+        items.forEach((item, idx) => {
+            const name = typeof item === 'string' ? item : item.name;
+            const cat = typeof item === 'object' && item.category ? item.category : '';
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="form-check p-2 bg-light border rounded d-flex align-items-center gap-2">
+                        <input class="form-check-input ms-0 ai-skill-checkbox" type="checkbox" value="${name.replace(/"/g, '&quot;')}" id="ai_skill_${idx}" checked>
+                        <label class="form-check-label small fw-semibold text-dark text-truncate" for="ai_skill_${idx}" title="${name}">
+                            ${name} ${cat ? `<span class="badge bg-white text-muted border ms-1" style="font-size: 0.65rem;">${cat}</span>` : ''}
+                        </label>
+                    </div>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    }
+
+    // Toggle Select All Skills
+    function toggleSelectAllSkills() {
+        const checkboxes = document.querySelectorAll('.ai-skill-checkbox');
+        const anyUnchecked = Array.from(checkboxes).some(c => !c.checked);
+        checkboxes.forEach(c => c.checked = anyUnchecked);
+        const btn = document.getElementById('aiSelectAllSkillsBtn');
+        if (btn) btn.innerText = anyUnchecked ? 'Deselect All' : 'Select All';
+    }
+
+    // Apply Result to Document Form & Trigger Autosave + Live Preview
+    function applyAiResultToDocument() {
+        const modalEl = document.getElementById('aiAssistantModal');
+        const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+
+        // 1. Skill Suggestions Application (Appends to DB)
+        if (currentAiFeature === 'skills') {
+            const checked = Array.from(document.querySelectorAll('.ai-skill-checkbox:checked')).map(c => c.value);
+            if (checked.length === 0) {
+                alert('Please select at least one skill to append.');
+                return;
+            }
+
+            const applyBtn = document.getElementById('aiApplyResultBtn');
+            if (applyBtn) applyBtn.disabled = true;
+
+            fetch(AI_ENDPOINTS.skills_append, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ skills: checked })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (applyBtn) applyBtn.disabled = false;
+                if (data.success) {
+                    if (modalInstance) modalInstance.hide();
+                    refreshLivePreview();
+                    if ('{{ $activeSection }}' === 'skills') {
+                        window.location.reload();
+                    }
+                } else {
+                    alert(data.message || 'Failed to append skills.');
+                }
+            })
+            .catch(() => {
+                if (applyBtn) applyBtn.disabled = false;
+                alert('Network error while appending skills.');
+            });
+            return;
+        }
+
+        // 2. Cover / Motivation Letter Application
+        if (currentAiFeature === 'cover_letter' || currentAiFeature === 'motivation_letter') {
+            const salutation = document.getElementById('aiLetterSalutation')?.value;
+            const opening = document.getElementById('aiLetterOpening')?.value;
+            const body = document.getElementById('aiLetterBody')?.value;
+            const cta = document.getElementById('aiLetterCallToAction')?.value;
+
+            const formSalutation = document.querySelector('input[name="salutation"]');
+            const formOpening = document.querySelector('textarea[name="opening"]');
+            const formBody = document.querySelector('textarea[name="body"]');
+            const formCta = document.querySelector('textarea[name="call_to_action"]');
+
+            if (formSalutation && salutation) formSalutation.value = salutation;
+            if (formOpening && opening) formOpening.value = opening;
+            if (formBody && body) formBody.value = body;
+            if (formCta && cta) formCta.value = cta;
+
+            // Trigger debounced autosave
+            triggerAutosave({
+                letter_details: {
+                    salutation: formSalutation ? formSalutation.value : salutation,
+                    opening: formOpening ? formOpening.value : opening,
+                    body: formBody ? formBody.value : body,
+                    call_to_action: formCta ? formCta.value : cta
+                }
+            });
+
+            if (modalInstance) modalInstance.hide();
+            refreshLivePreview();
+            return;
+        }
+
+        // 3. Text Area / Field Injection (Summary, Experience, Projects, Improve)
+        const textarea = document.getElementById('aiResultEditableTextarea');
+        const finalText = textarea ? textarea.value : '';
+
+        const targetId = currentAiOptions.target_input_id || currentAiOptions.targetField;
+        let targetEl = targetId ? document.getElementById(targetId) : null;
+
+        if (!targetEl && currentAiFeature === 'summary') {
+            targetEl = document.getElementById('summaryInput');
+        }
+
+        if (targetEl) {
+            targetEl.value = finalText;
+            targetEl.dispatchEvent(new Event('input', { bubbles: true }));
+            targetEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (currentAiFeature === 'summary' || currentAiFeature === 'objective') {
+            triggerAutosave({ summary: finalText });
+            if (typeof updateCharCount === 'function') updateCharCount();
+        }
+
+        if (modalInstance) modalInstance.hide();
+        refreshLivePreview();
+    }
+
+    // Modal Event Bindings
+    document.addEventListener('DOMContentLoaded', () => {
+        const generateBtn = document.getElementById('aiSubmitGenerateBtn');
+        if (generateBtn) generateBtn.addEventListener('click', submitAiGeneration);
+
+        const retryBtn = document.getElementById('aiRetryBtn');
+        if (retryBtn) retryBtn.addEventListener('click', submitAiGeneration);
+
+        const regenBtn = document.getElementById('aiRegenerateBtn');
+        if (regenBtn) regenBtn.addEventListener('click', () => setAiModalState('input'));
+
+        const applyBtn = document.getElementById('aiApplyResultBtn');
+        if (applyBtn) applyBtn.addEventListener('click', applyAiResultToDocument);
+
+        const selectAllSkillsBtn = document.getElementById('aiSelectAllSkillsBtn');
+        if (selectAllSkillsBtn) selectAllSkillsBtn.addEventListener('click', toggleSelectAllSkills);
+    });
 </script>
 @endpush

@@ -68,5 +68,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Cv::class);
     }
+
+    /**
+     * User's AI Assistant generation logs.
+     */
+    public function aiUsageLogs()
+    {
+        return $this->hasMany(AiUsageLog::class);
+    }
 }
 
