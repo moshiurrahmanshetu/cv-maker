@@ -39,14 +39,14 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link nav-link-saas {{ request()->routeIs('cvs.index') ? 'active' : '' }}" href="{{ route('cvs.index') }}">
-                            <i class="bi bi-file-text me-1"></i> My CVs
+                            <i class="bi bi-file-earmark-text me-1"></i> My Documents
                         </a>
                     </li>
                 </ul>
 
                 <div class="d-flex align-items-center gap-3">
                     <a href="{{ route('cvs.create') }}" class="btn-saas-primary btn-sm">
-                        <i class="bi bi-plus-lg"></i> Create CV
+                        <i class="bi bi-plus-lg"></i> Create Document
                     </a>
 
                     @auth
@@ -78,7 +78,7 @@
 
                                 <li>
                                     <a class="dropdown-item dropdown-item-saas" href="{{ route('cvs.index') }}">
-                                        <i class="bi bi-file-earmark-text"></i> My CVs
+                                        <i class="bi bi-file-earmark-text"></i> My Documents
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider-saas"></li>

@@ -13,12 +13,18 @@ use App\Models\CvPersonalInfo;
 use App\Models\CvProject;
 use App\Models\CvReference;
 use App\Models\CvSkill;
+use App\Models\DocumentLetterDetail;
+use App\Services\TemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class CvBuilderController extends Controller
 {
+    public function __construct(
+        protected TemplateService $templateService
+    ) {}
+
     /**
      * Display the CV Builder interface for a specific section.
      */
@@ -27,7 +33,9 @@ class CvBuilderController extends Controller
         $this->authorize('update', $cv);
 
         $cv->load([
+            'documentType',
             'personalInfo',
+            'letterDetail',
             'experiences',
             'educations',
             'skills',
@@ -37,10 +45,18 @@ class CvBuilderController extends Controller
             'awards',
             'references',
             'customSections',
+            'template',
         ]);
 
-        $activeSection = $request->get('section', 'personal-info');
-        $validSections = [
+        $isLetter = $cv->isLetter();
+
+        $validSections = $isLetter ? [
+            'personal-info',
+            'letter-details',
+            'letter-content',
+            'letter-closing',
+            'customization',
+        ] : [
             'personal-info',
             'summary',
             'experience',
@@ -52,8 +68,10 @@ class CvBuilderController extends Controller
             'awards',
             'references',
             'custom',
+            'customization',
         ];
 
+        $activeSection = $request->get('section', 'personal-info');
         if (!in_array($activeSection, $validSections)) {
             $activeSection = 'personal-info';
         }
@@ -78,7 +96,191 @@ class CvBuilderController extends Controller
             };
         }
 
-        return view('cvs.builder.layout', compact('cv', 'activeSection', 'checklist', 'editItem'));
+        // Prepare live preview data & compatible templates
+        $cvData = $this->templateService->prepareCvData($cv);
+        $templateModel = $cv->template ?? $this->templateService->findTemplate($cv->template_key);
+        $templateView = $this->templateService->resolveViewPath($templateModel);
+        $compatibleTemplates = $this->templateService->getActiveTemplatesForDocumentType($cv->document_type_id);
+
+        return view('cvs.builder.layout', compact(
+            'cv',
+            'activeSection',
+            'checklist',
+            'editItem',
+            'cvData',
+            'templateModel',
+            'templateView',
+            'compatibleTemplates',
+            'isLetter'
+        ));
+    }
+
+    /**
+     * Render and return the HTML preview snippet for live dynamic iframe/DOM updates.
+     */
+    public function renderPreview(Request $request, Cv $cv)
+    {
+        $this->authorize('update', $cv);
+
+        $cvData = $this->templateService->prepareCvData($cv);
+        $templateModel = $cv->template ?? $this->templateService->findTemplate($cv->template_key);
+        $templateView = $this->templateService->resolveViewPath($templateModel);
+
+        $renderedHtml = view($templateView, compact('cvData', 'cv'))->render();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'html' => $renderedHtml,
+                'template' => $templateModel?->name ?? 'Default',
+                'template_key' => $templateModel?->key ?? $cv->template_key,
+                'completion_percentage' => $cv->completion_percentage,
+            ]);
+        }
+
+        return response($renderedHtml);
+    }
+
+    /**
+     * Debounced background autosave endpoint for zero-friction editing.
+     */
+    public function autosave(Request $request, Cv $cv)
+    {
+        $this->authorize('update', $cv);
+
+        $data = $request->all();
+
+        // 1. Document Title
+        if ($request->filled('title')) {
+            $cv->title = $request->input('title');
+        }
+
+        // 2. Profile Summary
+        if ($request->has('summary')) {
+            $cv->summary = $request->input('summary');
+        }
+
+        // 3. Personal / Sender Info
+        if ($request->has('personal_info')) {
+            $infoData = $request->input('personal_info', []);
+            $info = $cv->personalInfo ?: new CvPersonalInfo(['cv_id' => $cv->id]);
+            $info->fill(array_intersect_key($infoData, array_flip([
+                'full_name', 'job_title', 'email', 'phone', 'address', 'city', 'country', 'postal_code', 'website', 'linkedin', 'github', 'other_url'
+            ])));
+            $info->save();
+        }
+
+        // 4. Letter Details
+        if ($request->has('letter_details')) {
+            $letterData = $request->input('letter_details', []);
+            $letter = $cv->letterDetail ?: new DocumentLetterDetail(['cv_id' => $cv->id]);
+            $letter->fill(array_intersect_key($letterData, array_flip([
+                'recipient_name', 'recipient_title', 'company_name', 'company_address', 'letter_date', 'subject', 'salutation', 'opening', 'body', 'call_to_action', 'closing', 'sender_signature'
+            ])));
+            $letter->save();
+        }
+
+        // 5. Settings / Customization
+        if ($request->has('settings')) {
+            $currentSettings = is_array($cv->settings) ? $cv->settings : [];
+            $newSettings = array_merge($currentSettings, $request->input('settings', []));
+            $cv->settings = $newSettings;
+            if (isset($newSettings['accent_color'])) {
+                $cv->primary_color = $newSettings['accent_color'];
+            }
+            if (isset($newSettings['font_family'])) {
+                $cv->font_family = $newSettings['font_family'];
+            }
+        }
+
+        $cv->completion_percentage = $cv->calculateCompletion();
+        $cv->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Autosaved successfully',
+            'saved_at' => now()->format('h:i:s A'),
+            'completion_percentage' => $cv->completion_percentage,
+        ]);
+    }
+
+    /**
+     * Save Letter Details for Cover Letter / Motivation Letter.
+     */
+    public function saveLetterDetails(Request $request, Cv $cv)
+    {
+        $this->authorize('update', $cv);
+
+        $validated = $request->validate([
+            'recipient_name' => ['nullable', 'string', 'max:255'],
+            'recipient_title' => ['nullable', 'string', 'max:255'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'company_address' => ['nullable', 'string'],
+            'letter_date' => ['nullable', 'string', 'max:50'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'salutation' => ['nullable', 'string', 'max:255'],
+            'opening' => ['nullable', 'string'],
+            'body' => ['nullable', 'string'],
+            'call_to_action' => ['nullable', 'string'],
+            'closing' => ['nullable', 'string', 'max:100'],
+            'sender_signature' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $letter = $cv->letterDetail ?: new DocumentLetterDetail(['cv_id' => $cv->id]);
+        $letter->fill($validated);
+        $letter->save();
+
+        $cv->completion_percentage = $cv->calculateCompletion();
+        $cv->save();
+
+        $nextSection = $request->input('section', 'letter-details');
+
+        return redirect()->route('cvs.builder.show', ['cv' => $cv, 'section' => $nextSection])
+            ->with('success', 'Letter details updated successfully.');
+    }
+
+    /**
+     * Save Design Customization Settings (colors, typography, spacing).
+     */
+    public function saveSettings(Request $request, Cv $cv)
+    {
+        $this->authorize('update', $cv);
+
+        $validated = $request->validate([
+            'accent_color' => ['nullable', 'string', 'max:30'],
+            'font_family' => ['nullable', 'string', 'max:50'],
+            'font_size' => ['nullable', 'in:small,normal,large'],
+            'heading_size' => ['nullable', 'in:compact,normal,large'],
+            'line_spacing' => ['nullable', 'in:compact,normal,relaxed'],
+            'section_spacing' => ['nullable', 'in:compact,normal,spacious'],
+            'photo_size' => ['nullable', 'in:small,medium,large,hidden'],
+            'show_icons' => ['nullable', 'boolean'],
+        ]);
+
+        $currentSettings = is_array($cv->settings) ? $cv->settings : [];
+        $merged = array_merge($currentSettings, $validated, [
+            'show_icons' => $request->boolean('show_icons'),
+        ]);
+
+        $cv->settings = $merged;
+        if (!empty($validated['accent_color'])) {
+            $cv->primary_color = $validated['accent_color'];
+        }
+        if (!empty($validated['font_family'])) {
+            $cv->font_family = $validated['font_family'];
+        }
+        $cv->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Customization saved.',
+                'settings' => $cv->settings,
+            ]);
+        }
+
+        return redirect()->route('cvs.builder.show', ['cv' => $cv, 'section' => 'customization'])
+            ->with('success', 'Design settings updated.');
     }
 
     /**

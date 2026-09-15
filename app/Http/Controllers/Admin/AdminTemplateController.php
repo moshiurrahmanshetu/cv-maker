@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CvTemplate;
+use App\Models\DocumentType;
 use App\Models\TemplateCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,11 +13,11 @@ use Illuminate\Support\Str;
 class AdminTemplateController extends Controller
 {
     /**
-     * Display a listing of templates with filters and usage counts.
+     * Display a listing of templates with filters, document type compatibility, and usage counts.
      */
     public function index(Request $request)
     {
-        $query = CvTemplate::with('category')->withCount('cvs');
+        $query = CvTemplate::with(['category', 'documentTypes'])->withCount('cvs');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -29,6 +30,13 @@ class AdminTemplateController extends Controller
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('document_type_id')) {
+            $typeId = $request->document_type_id;
+            $query->whereHas('documentTypes', function ($q) use ($typeId) {
+                $q->where('document_types.id', $typeId);
+            });
         }
 
         if ($request->filled('status')) {
@@ -49,8 +57,9 @@ class AdminTemplateController extends Controller
 
         $templates = $query->orderBy('sort_order')->paginate(10)->withQueryString();
         $categories = TemplateCategory::orderBy('sort_order')->get();
+        $documentTypes = DocumentType::orderBy('sort_order')->get();
 
-        return view('admin.templates.index', compact('templates', 'categories'));
+        return view('admin.templates.index', compact('templates', 'categories', 'documentTypes'));
     }
 
     /**
@@ -59,7 +68,8 @@ class AdminTemplateController extends Controller
     public function create()
     {
         $categories = TemplateCategory::where('is_active', true)->orderBy('sort_order')->get();
-        return view('admin.templates.create', compact('categories'));
+        $documentTypes = DocumentType::where('is_active', true)->orderBy('sort_order')->get();
+        return view('admin.templates.create', compact('categories', 'documentTypes'));
     }
 
     /**
@@ -77,6 +87,8 @@ class AdminTemplateController extends Controller
             'is_premium' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'document_type_ids' => ['nullable', 'array'],
+            'document_type_ids.*' => ['exists:document_types,id'],
         ]);
 
         $previewPath = null;
@@ -94,7 +106,7 @@ class AdminTemplateController extends Controller
             $counter++;
         }
 
-        CvTemplate::create([
+        $template = CvTemplate::create([
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
             'slug' => $slug,
@@ -106,6 +118,10 @@ class AdminTemplateController extends Controller
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
 
+        if (!empty($validated['document_type_ids'])) {
+            $template->documentTypes()->sync($validated['document_type_ids']);
+        }
+
         return redirect()->route('admin.templates.index')->with('success', "Template '{$validated['name']}' created successfully.");
     }
 
@@ -115,7 +131,9 @@ class AdminTemplateController extends Controller
     public function edit(CvTemplate $template)
     {
         $categories = TemplateCategory::orderBy('sort_order')->get();
-        return view('admin.templates.edit', compact('template', 'categories'));
+        $documentTypes = DocumentType::where('is_active', true)->orderBy('sort_order')->get();
+        $template->load('documentTypes');
+        return view('admin.templates.edit', compact('template', 'categories', 'documentTypes'));
     }
 
     /**
@@ -133,6 +151,8 @@ class AdminTemplateController extends Controller
             'is_premium' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'document_type_ids' => ['nullable', 'array'],
+            'document_type_ids.*' => ['exists:document_types,id'],
         ]);
 
         $previewPath = $template->preview_image;
@@ -158,6 +178,10 @@ class AdminTemplateController extends Controller
             'is_active' => $request->boolean('is_active'),
             'sort_order' => $validated['sort_order'] ?? $template->sort_order,
         ]);
+
+        if (isset($validated['document_type_ids'])) {
+            $template->documentTypes()->sync($validated['document_type_ids']);
+        }
 
         return redirect()->route('admin.templates.index')->with('success', "Template '{$template->name}' updated successfully.");
     }

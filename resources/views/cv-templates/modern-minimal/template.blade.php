@@ -1,13 +1,12 @@
 {{-- Template 2: Modern Minimal (2-Column Sidebar) --}}
-<div class="template-modern-minimal">
+<div class="template-modern-minimal" style="
+    font-family: {{ $cvData['fontFamily'] ?? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }};
+    color: #1e293b;
+    background: #ffffff;
+    line-height: {{ $cvData['lineSpacing'] === 'compact' ? '1.35' : ($cvData['lineSpacing'] === 'relaxed' ? '1.75' : '1.5') }};
+    font-size: {{ $cvData['fontSizeScale'] === 'small' ? '0.85rem' : ($cvData['fontSizeScale'] === 'large' ? '1.02rem' : '0.9rem') }};
+">
     <style>
-        .template-modern-minimal {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            color: #1e293b;
-            background: #ffffff;
-            line-height: 1.5;
-            font-size: 0.9rem;
-        }
         .template-modern-minimal .modern-sidebar {
             background-color: #f8fafc;
             border-right: 1px solid #e2e8f0;
@@ -17,9 +16,9 @@
             padding: 24px 24px;
         }
         .template-modern-minimal .modern-name {
-            font-size: 2.2rem;
+            font-size: {{ $cvData['headingScale'] === 'compact' ? '1.7rem' : ($cvData['headingScale'] === 'large' ? '2.5rem' : '2.2rem') }};
             font-weight: 800;
-            color: #0f172a;
+            color: {{ $cvData['accentColor'] ?? '#0f172a' }};
             letter-spacing: -0.02em;
             line-height: 1.1;
         }
@@ -29,6 +28,7 @@
             color: #475569;
             letter-spacing: 0.02em;
         }
+
         .template-modern-minimal .modern-section-heading {
             font-size: 0.85rem;
             font-weight: 700;

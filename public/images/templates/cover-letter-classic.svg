@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="100%" height="100%">
+  <!-- Background Paper -->
+  <rect width="400" height="520" fill="#ffffff" rx="8" />
+  <rect x="0.5" y="0.5" width="399" height="519" fill="none" stroke="#e2e8f0" stroke-width="1" rx="8" />
+
+  <!-- Executive Letterhead -->
+  <rect x="30" y="26" width="150" height="14" rx="2" fill="#1e293b" />
+  <rect x="30" y="44" width="100" height="6" rx="1.5" fill="#64748b" />
+  <rect x="30" y="55" width="220" height="5" rx="1.5" fill="#94a3b8" />
+  <line x1="30" y1="68" x2="370" y2="68" stroke="#1e293b" stroke-width="2" />
+
+  <!-- Date -->
+  <rect x="30" y="82" width="70" height="6" rx="1" fill="#475569" />
+
+  <!-- Recipient Block -->
+  <rect x="30" y="98" width="100" height="7" rx="1" fill="#1e293b" />
+  <rect x="30" y="108" width="80" height="5" rx="1" fill="#64748b" />
+  <rect x="30" y="116" width="110" height="5" rx="1" fill="#64748b" />
+
+  <!-- Subject line -->
+  <rect x="30" y="132" width="160" height="7" rx="1" fill="#1e293b" />
+  <line x1="30" y1="142" x2="210" y2="142" stroke="#cbd5e1" stroke-width="1" />
+
+  <!-- Salutation -->
+  <rect x="30" y="154" width="110" height="7" rx="1" fill="#1e293b" />
+
+  <!-- Opening Paragraph -->
+  <rect x="30" y="170" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="178" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="186" width="290" height="5" rx="1" fill="#475569" />
+
+  <!-- Body Paragraph 1 -->
+  <rect x="30" y="202" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="210" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="218" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="226" width="240" height="5" rx="1" fill="#475569" />
+
+  <!-- Body Paragraph 2 -->
+  <rect x="30" y="242" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="250" width="320" height="5" rx="1" fill="#475569" />
+
+  <!-- Call to Action -->
+  <rect x="30" y="266" width="340" height="5" rx="1" fill="#475569" />
+  <rect x="30" y="274" width="260" height="5" rx="1" fill="#475569" />
+
+  <!-- Sign-off & Signature -->
+  <rect x="30" y="296" width="55" height="6" rx="1" fill="#64748b" />
+  <rect x="30" y="322" width="100" height="8" rx="1" fill="#1e293b" />
+
+  <!-- Letter Badge -->
+  <rect x="260" y="475" width="110" height="22" rx="4" fill="#1e293b" />
+  <text x="315" y="490" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">COVER LETTER</text>
+</svg>

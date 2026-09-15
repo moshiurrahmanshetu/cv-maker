@@ -11,7 +11,7 @@
                 <i class="bi bi-arrow-left me-1"></i> Back to Templates
             </a>
             <h2 class="h4 fw-bold mt-2 mb-1">Register New Template</h2>
-            <p class="text-muted small mb-0">Register a new Blade template directory and metadata into the platform catalog.</p>
+            <p class="text-muted small mb-0">Register a new Blade template directory, metadata, and compatible career document types.</p>
         </div>
 
         <div class="card card-saas">
@@ -61,6 +61,30 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+
+                    <!-- Compatible Document Types -->
+                    <div class="mb-4 p-3 bg-light rounded border">
+                        <label class="form-label fw-bold text-dark mb-2">
+                            <i class="bi bi-file-earmark-check me-1 text-primary"></i> Compatible Document Types
+                        </label>
+                        <p class="text-muted small mb-2">Select which document types this template is designed for:</p>
+                        <div class="row g-2">
+                            @foreach($documentTypes as $docType)
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="document_type_ids[]" value="{{ $docType->id }}" id="docTypeCheck_{{ $docType->id }}" 
+                                               {{ (is_array(old('document_type_ids')) && in_array($docType->id, old('document_type_ids'))) ? 'checked' : '' }}>
+                                        <label class="form-check-label small fw-semibold" for="docTypeCheck_{{ $docType->id }}">
+                                            <i class="bi {{ $docType->icon }} me-1 text-muted"></i> {{ $docType->name }}
+                                        </label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        @error('document_type_ids')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="mb-4">

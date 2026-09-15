@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="100%" height="100%">
+  <!-- Background Paper -->
+  <rect width="400" height="520" fill="#ffffff" rx="8" />
+  <rect x="0.5" y="0.5" width="399" height="519" fill="none" stroke="#e2e8f0" stroke-width="1" rx="8" />
+
+  <!-- ATS Header (Clean Centered Linear) -->
+  <rect x="130" y="24" width="140" height="14" rx="2" fill="#111827" />
+  <rect x="145" y="44" width="110" height="7" rx="1.5" fill="#4b5563" />
+  <rect x="60" y="58" width="280" height="6" rx="1.5" fill="#6b7280" />
+  <line x1="30" y1="72" x2="370" y2="72" stroke="#9ca3af" stroke-width="1" />
+
+  <!-- Summary -->
+  <rect x="30" y="84" width="130" height="8" rx="1.5" fill="#111827" />
+  <line x1="30" y1="96" x2="370" y2="96" stroke="#9ca3af" stroke-width="0.8" />
+  <rect x="30" y="104" width="340" height="5" rx="1" fill="#4b5563" />
+  <rect x="30" y="113" width="310" height="5" rx="1" fill="#4b5563" />
+
+  <!-- Experience -->
+  <rect x="30" y="132" width="120" height="8" rx="1.5" fill="#111827" />
+  <line x1="30" y1="144" x2="370" y2="144" stroke="#9ca3af" stroke-width="0.8" />
+  
+  <rect x="30" y="152" width="150" height="7" rx="1" fill="#111827" />
+  <rect x="300" y="152" width="70" height="6" rx="1" fill="#6b7280" />
+  <rect x="30" y="162" width="100" height="5" rx="1" fill="#4b5563" />
+  <circle cx="35" cy="174" r="1.5" fill="#111827" /><rect x="42" y="172" width="320" height="4" rx="1" fill="#6b7280" />
+  <circle cx="35" cy="182" r="1.5" fill="#111827" /><rect x="42" y="180" width="300" height="4" rx="1" fill="#6b7280" />
+
+  <rect x="30" y="196" width="140" height="7" rx="1" fill="#111827" />
+  <rect x="305" y="196" width="65" height="6" rx="1" fill="#6b7280" />
+  <rect x="30" y="206" width="110" height="5" rx="1" fill="#4b5563" />
+  <circle cx="35" cy="218" r="1.5" fill="#111827" /><rect x="42" y="216" width="320" height="4" rx="1" fill="#6b7280" />
+  <circle cx="35" cy="226" r="1.5" fill="#111827" /><rect x="42" y="224" width="280" height="4" rx="1" fill="#6b7280" />
+
+  <!-- Education -->
+  <rect x="30" y="244" width="90" height="8" rx="1.5" fill="#111827" />
+  <line x1="30" y1="256" x2="370" y2="256" stroke="#9ca3af" stroke-width="0.8" />
+  <rect x="30" y="264" width="160" height="7" rx="1" fill="#111827" />
+  <rect x="300" y="264" width="70" height="6" rx="1" fill="#6b7280" />
+  <rect x="30" y="274" width="130" height="5" rx="1" fill="#4b5563" />
+
+  <!-- Skills -->
+  <rect x="30" y="294" width="60" height="8" rx="1.5" fill="#111827" />
+  <line x1="30" y1="306" x2="370" y2="306" stroke="#9ca3af" stroke-width="0.8" />
+  <rect x="30" y="314" width="340" height="5" rx="1" fill="#4b5563" />
+  <rect x="30" y="323" width="300" height="5" rx="1" fill="#4b5563" />
+
+  <!-- ATS Badge -->
+  <rect x="280" y="475" width="90" height="22" rx="4" fill="#059669" />
+  <text x="325" y="490" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">ATS READY</text>
+</svg>

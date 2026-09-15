@@ -1,21 +1,20 @@
 {{-- Template 1: Classic Executive --}}
-<div class="template-classic-executive">
+<div class="template-classic-executive" style="
+    font-family: {{ $cvData['fontFamily'] ?? "'Times New Roman', Times, 'Georgia', serif" }};
+    color: #1e293b;
+    background: #ffffff;
+    line-height: {{ $cvData['lineSpacing'] === 'compact' ? '1.35' : ($cvData['lineSpacing'] === 'relaxed' ? '1.75' : '1.5') }};
+    font-size: {{ $cvData['fontSizeScale'] === 'small' ? '0.85rem' : ($cvData['fontSizeScale'] === 'large' ? '1.02rem' : '0.92rem') }};
+">
     <style>
-        .template-classic-executive {
-            font-family: 'Times New Roman', Times, 'Georgia', serif;
-            color: #1e293b;
-            background: #ffffff;
-            line-height: 1.5;
-            font-size: 0.92rem;
-        }
         .template-classic-executive .classic-sans {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: {{ $cvData['fontFamily'] ?? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }};
         }
         .template-classic-executive .header-name {
-            font-size: 2.1rem;
+            font-size: {{ $cvData['headingScale'] === 'compact' ? '1.7rem' : ($cvData['headingScale'] === 'large' ? '2.4rem' : '2.1rem') }};
             font-weight: 700;
             letter-spacing: 0.04em;
-            color: #0f172a;
+            color: {{ $cvData['accentColor'] ?? '#0f172a' }};
             text-transform: uppercase;
         }
         .template-classic-executive .header-title {
@@ -30,12 +29,13 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.12em;
-            color: #0f172a;
-            border-bottom: 1.5px solid #334155;
+            color: {{ $cvData['accentColor'] ?? '#0f172a' }};
+            border-bottom: 1.5px solid {{ $cvData['accentColor'] ?? '#334155' }};
             padding-bottom: 4px;
             margin-bottom: 14px;
-            margin-top: 18px;
+            margin-top: {{ $cvData['sectionSpacing'] === 'compact' ? '12px' : ($cvData['sectionSpacing'] === 'spacious' ? '24px' : '18px') }};
         }
+
         .template-classic-executive .classic-section-heading:first-child {
             margin-top: 0;
         }

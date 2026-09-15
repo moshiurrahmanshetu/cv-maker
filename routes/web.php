@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminCvController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminDocumentTypeController;
 use App\Http\Controllers\Admin\AdminTemplateCategoryController;
 use App\Http\Controllers\Admin\AdminTemplateController;
 use App\Http\Controllers\Admin\AdminUserController;
@@ -54,7 +55,7 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // CV Management Routes
+    // Career Document Management Routes (CVs, Resumes, Cover Letters, Motivation Letters)
     Route::prefix('cvs')->name('cvs.')->group(function () {
         Route::get('/', [CvController::class, 'index'])->name('index');
         Route::get('/create', [CvController::class, 'create'])->name('create');
@@ -67,11 +68,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/{cv}/toggle-status', [CvController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/{cv}/switch-template', [CvController::class, 'switchTemplate'])->name('switch-template');
 
-        // Phase 2 - Section-Driven CV Builder Routes
+        // Builder Routes (CV and Letter Split-Screen Workspace)
         Route::prefix('{cv}/builder')->name('builder.')->group(function () {
             Route::get('/', [CvBuilderController::class, 'show'])->name('show');
             Route::post('/personal-info', [CvBuilderController::class, 'savePersonalInfo'])->name('personal-info');
             Route::post('/summary', [CvBuilderController::class, 'saveSummary'])->name('summary');
+            Route::post('/letter-details', [CvBuilderController::class, 'saveLetterDetails'])->name('letter-details');
+            Route::post('/settings', [CvBuilderController::class, 'saveSettings'])->name('settings');
+            Route::post('/autosave', [CvBuilderController::class, 'autosave'])->name('autosave');
+            Route::get('/render-preview', [CvBuilderController::class, 'renderPreview'])->name('render-preview');
             Route::post('/items/{section}', [CvBuilderController::class, 'storeItem'])->name('items.store');
             Route::put('/items/{section}/{id}', [CvBuilderController::class, 'updateItem'])->name('items.update');
             Route::delete('/items/{section}/{id}', [CvBuilderController::class, 'deleteItem'])->name('items.destroy');
@@ -91,18 +96,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::post('/users/{user}/toggle-role', [AdminUserController::class, 'toggleRole'])->name('users.toggle-role');
 
-        // All CVs Overview
+        // All Documents Overview
         Route::get('/cvs', [AdminCvController::class, 'index'])->name('cvs.index');
         Route::get('/cvs/{cv}', [AdminCvController::class, 'show'])->name('cvs.show');
 
-        // Phase 3: Admin Template Categories Management
+        // Document Types Management
+        Route::resource('document-types', AdminDocumentTypeController::class)->except(['show']);
+        Route::post('document-types/{documentType}/toggle-status', [AdminDocumentTypeController::class, 'toggleStatus'])->name('document-types.toggle-status');
+
+        // Template Categories Management
         Route::prefix('templates')->name('templates.')->group(function () {
             Route::get('/categories', [AdminTemplateCategoryController::class, 'index'])->name('categories.index');
             Route::post('/categories', [AdminTemplateCategoryController::class, 'store'])->name('categories.store');
             Route::put('/categories/{category}', [AdminTemplateCategoryController::class, 'update'])->name('categories.update');
             Route::delete('/categories/{category}', [AdminTemplateCategoryController::class, 'destroy'])->name('categories.destroy');
 
-            // Phase 3: Admin Templates Management
+            // Templates Management
             Route::get('/', [AdminTemplateController::class, 'index'])->name('index');
             Route::get('/create', [AdminTemplateController::class, 'create'])->name('create');
             Route::post('/', [AdminTemplateController::class, 'store'])->name('store');

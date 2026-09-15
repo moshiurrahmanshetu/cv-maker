@@ -1,32 +1,31 @@
 {{-- Template 3: Technical Split --}}
-<div class="template-technical-split">
+<div class="template-technical-split" style="
+    font-family: {{ $cvData['fontFamily'] ?? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }};
+    color: #1e293b;
+    background: #ffffff;
+    line-height: {{ $cvData['lineSpacing'] === 'compact' ? '1.35' : ($cvData['lineSpacing'] === 'relaxed' ? '1.75' : '1.5') }};
+    font-size: {{ $cvData['fontSizeScale'] === 'small' ? '0.85rem' : ($cvData['fontSizeScale'] === 'large' ? '1.02rem' : '0.88rem') }};
+">
     <style>
-        .template-technical-split {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            color: #1e293b;
-            background: #ffffff;
-            line-height: 1.5;
-            font-size: 0.88rem;
-        }
         .template-technical-split .tech-mono {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         }
         .template-technical-split .tech-header {
-            background-color: #0f172a;
+            background-color: {{ $cvData['accentColor'] ?? '#0f172a' }};
             color: #f8fafc;
             padding: 24px 28px;
             border-radius: 6px;
             margin-bottom: 20px;
         }
         .template-technical-split .tech-name {
-            font-size: 2rem;
+            font-size: {{ $cvData['headingScale'] === 'compact' ? '1.6rem' : ($cvData['headingScale'] === 'large' ? '2.4rem' : '2.0rem') }};
             font-weight: 800;
             letter-spacing: -0.02em;
             color: #ffffff;
         }
         .template-technical-split .tech-role-badge {
             display: inline-block;
-            background-color: #334155;
+            background-color: rgba(255, 255, 255, 0.2);
             color: #e2e8f0;
             padding: 2px 10px;
             border-radius: 4px;
@@ -34,6 +33,7 @@
             font-weight: 600;
             letter-spacing: 0.04em;
         }
+
         .template-technical-split .tech-section-heading {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 0.82rem;

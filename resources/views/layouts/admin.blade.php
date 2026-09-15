@@ -48,9 +48,15 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('admin.cvs.index') }}" class="sidebar-link {{ request()->routeIs('admin.cvs.*') ? 'active' : '' }}" title="All CVs">
+                    <a href="{{ route('admin.cvs.index') }}" class="sidebar-link {{ request()->routeIs('admin.cvs.*') ? 'active' : '' }}" title="All Documents">
                         <i class="bi bi-file-earmark-text"></i>
-                        <span class="nav-item-text">All CVs</span>
+                        <span class="nav-item-text">All Documents</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.document-types.index') }}" class="sidebar-link {{ request()->routeIs('admin.document-types.*') ? 'active' : '' }}" title="Document Types">
+                        <i class="bi bi-file-earmark-ruled"></i>
+                        <span class="nav-item-text">Document Types</span>
                     </a>
                 </li>
                 <li>
@@ -116,7 +122,13 @@
                     <li>
                         <a href="{{ route('admin.cvs.index') }}" class="sidebar-link {{ request()->routeIs('admin.cvs.*') ? 'active' : '' }}">
                             <i class="bi bi-file-earmark-text"></i>
-                            <span>All CVs</span>
+                            <span>All Documents</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.document-types.index') }}" class="sidebar-link {{ request()->routeIs('admin.document-types.*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-ruled"></i>
+                            <span>Document Types</span>
                         </a>
                     </li>
                     <li>

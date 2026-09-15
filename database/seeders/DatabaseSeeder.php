@@ -12,6 +12,9 @@ use App\Models\CvPersonalInfo;
 use App\Models\CvProject;
 use App\Models\CvReference;
 use App\Models\CvSkill;
+use App\Models\CvTemplate;
+use App\Models\DocumentLetterDetail;
+use App\Models\DocumentType;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -23,11 +26,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 0. Seed Templates & Categories
+        // 0. Seed Templates, Categories, and Document Types
         $this->call(TemplateSeeder::class);
-        $classicTemplate = \App\Models\CvTemplate::where('key', 'classic-executive')->first();
-        $modernTemplate = \App\Models\CvTemplate::where('key', 'modern-minimal')->first();
-        $techTemplate = \App\Models\CvTemplate::where('key', 'technical-split')->first();
+
+        $classicTemplate = CvTemplate::where('key', 'classic-executive')->first();
+        $modernTemplate = CvTemplate::where('key', 'modern-minimal')->first();
+        $techTemplate = CvTemplate::where('key', 'technical-split')->first();
+        $atsTemplate = CvTemplate::where('key', 'ats-clean')->first();
+        $coverClassicTemplate = CvTemplate::where('key', 'cover-letter-classic')->first();
+        $motivationAcademicTemplate = CvTemplate::where('key', 'motivation-academic')->first();
+
+        $stdCvType = DocumentType::where('slug', 'standard-cv')->first();
+        $atsCvType = DocumentType::where('slug', 'ats-cv')->first();
+        $coverLetterType = DocumentType::where('slug', 'cover-letter')->first();
+        $motivationLetterType = DocumentType::where('slug', 'motivation-letter')->first();
 
         // 1. Admin User
         $admin = User::firstOrCreate(
@@ -62,9 +74,10 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Sample 1: Published Full-Stack CV for Alex Morgan
+        // Sample 1: Published Full-Stack Standard CV for Alex Morgan
         $cv1 = Cv::create([
             'user_id' => $user->id,
+            'document_type_id' => $stdCvType?->id,
             'template_id' => $classicTemplate?->id,
             'title' => 'Senior Full Stack Engineer Resume',
             'slug' => 'senior-full-stack-engineer-resume',
@@ -164,6 +177,7 @@ class DatabaseSeeder extends Seeder
         // Sample 2: Incomplete Draft CV for Alex Morgan
         $cv2 = Cv::create([
             'user_id' => $user->id,
+            'document_type_id' => $stdCvType?->id,
             'template_id' => $modernTemplate?->id,
             'title' => 'Product Strategy Specialist (Draft)',
             'slug' => 'product-strategy-specialist-draft',
@@ -183,9 +197,90 @@ class DatabaseSeeder extends Seeder
             'phone' => '+1 (555) 234-5678',
         ]);
 
-        // Sample 3: CV belonging to Jane Doe (for ownership isolation check)
+        // Sample 3: Cover Letter for Alex Morgan
+        $coverDoc = Cv::create([
+            'user_id' => $user->id,
+            'document_type_id' => $coverLetterType?->id,
+            'template_id' => $coverClassicTemplate?->id,
+            'title' => 'Google - Senior Cloud Architect Cover Letter',
+            'slug' => 'google-senior-cloud-architect-cover-letter',
+            'status' => 'published',
+            'template_key' => 'cover-letter-classic',
+            'primary_color' => '#1e293b',
+            'font_family' => 'Inter',
+            'completion_percentage' => 100,
+        ]);
+
+        CvPersonalInfo::create([
+            'cv_id' => $coverDoc->id,
+            'full_name' => 'Alex Morgan',
+            'job_title' => 'Senior Full Stack Engineer',
+            'email' => 'alex.morgan@example.com',
+            'phone' => '+1 (555) 234-5678',
+            'city' => 'San Francisco',
+            'country' => 'USA',
+            'linkedin' => 'https://linkedin.com/in/alexmorgan',
+        ]);
+
+        DocumentLetterDetail::create([
+            'cv_id' => $coverDoc->id,
+            'recipient_name' => 'Dr. Elizabeth Vance',
+            'recipient_title' => 'Director of Engineering Talent',
+            'company_name' => 'Google LLC',
+            'company_address' => "1600 Amphitheatre Parkway\nMountain View, CA 94043",
+            'letter_date' => date('F j, Y'),
+            'subject' => 'Application for Senior Cloud Architect (Req #84920)',
+            'salutation' => 'Dear Dr. Vance,',
+            'opening' => 'I am writing to express my enthusiastic interest in the Senior Cloud Architect position at Google. With more than 7 years of background architecting resilient distributed systems and driving high-throughput cloud migrations, I am confident in my capacity to deliver meaningful impact to your engineering organization.',
+            'body' => "Throughout my tenure at Apex Cloud Solutions, I led the architectural overhaul of our core streaming data pipeline, improving system uptime to 99.99% while reducing compute overhead by 35%. My leadership philosophy centers on engineering excellence, data-driven system design, and fostering inclusive, high-velocity developer teams.\n\nI have followed Google's recent advancements in distributed computing and hybrid cloud orchestration with great admiration. The opportunity to contribute to infrastructure that powers global scale technologies strongly aligns with my professional aspirations.",
+            'call_to_action' => 'Thank you for your time and consideration. I would welcome the opportunity to discuss how my architectural experience and technical leadership align with the needs of your team.',
+            'closing' => 'Sincerely,',
+            'sender_signature' => 'Alex Morgan',
+        ]);
+
+        // Sample 4: Motivation Letter for Alex Morgan
+        $motivationDoc = Cv::create([
+            'user_id' => $user->id,
+            'document_type_id' => $motivationLetterType?->id,
+            'template_id' => $motivationAcademicTemplate?->id,
+            'title' => 'Stanford University - M.S. AI Motivation Statement',
+            'slug' => 'stanford-university-ms-ai-motivation-statement',
+            'status' => 'draft',
+            'template_key' => 'motivation-academic',
+            'primary_color' => '#8c1d40',
+            'font_family' => 'Georgia',
+            'completion_percentage' => 85,
+        ]);
+
+        CvPersonalInfo::create([
+            'cv_id' => $motivationDoc->id,
+            'full_name' => 'Alex Morgan',
+            'email' => 'alex.morgan@example.com',
+            'phone' => '+1 (555) 234-5678',
+            'city' => 'San Francisco',
+            'country' => 'USA',
+        ]);
+
+        DocumentLetterDetail::create([
+            'cv_id' => $motivationDoc->id,
+            'recipient_name' => 'Graduate Admissions Committee',
+            'recipient_title' => 'Department of Computer Science',
+            'company_name' => 'Stanford University',
+            'company_address' => "450 Jane Stanford Way\nStanford, CA 94305",
+            'letter_date' => date('F j, Y'),
+            'subject' => 'Statement of Purpose – Master of Science in Artificial Intelligence',
+            'salutation' => 'Dear Members of the Admissions Committee,',
+            'opening' => 'I am applying for admission to the Master of Science in Computer Science (Artificial Intelligence specialization) program at Stanford University for the upcoming academic year.',
+            'body' => "My professional journey over the past 7 years in cloud systems architecture has demonstrated to me the critical necessity for intelligent, autonomous optimization within complex distributed topologies. I aim to conduct rigorous research at Stanford focusing on neural reinforcement learning for large-scale systems optimization.\n\nHaving graduated from UC Berkeley with Honors in Computer Science (3.85 GPA), I possess the foundational rigor required for graduate research at Stanford. Studying under your esteemed faculty will enable me to bridge production engineering practice with deep research.",
+            'call_to_action' => 'I look forward to the possibility of joining Stanford University and contributing meaningfully to your academic community.',
+            'closing' => 'Respectfully submitted,',
+            'sender_signature' => 'Alex Morgan',
+        ]);
+
+        // Sample 5: CV belonging to Jane Doe (for ownership isolation check)
         $cv3 = Cv::create([
             'user_id' => $user2->id,
+            'document_type_id' => $stdCvType?->id,
             'template_id' => $techTemplate?->id,
             'title' => 'Jane Doe - Marketing Director',
             'slug' => 'jane-doe-marketing-director',

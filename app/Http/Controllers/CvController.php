@@ -14,6 +14,8 @@ use App\Models\CvProject;
 use App\Models\CvReference;
 use App\Models\CvSkill;
 use App\Models\CvTemplate;
+use App\Models\DocumentLetterDetail;
+use App\Models\DocumentType;
 use App\Services\TemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,14 +29,21 @@ class CvController extends Controller
     ) {}
 
     /**
-     * Display a listing of the user's CVs.
+     * Display a listing of the user's career documents.
      */
     public function index(Request $request)
     {
-        $query = Auth::user()->cvs()->with(['personalInfo', 'template']);
+        $query = Auth::user()->cvs()->with(['documentType', 'personalInfo', 'letterDetail', 'template']);
 
         if ($request->filled('status') && in_array($request->status, ['draft', 'published'])) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('document_type')) {
+            $docTypeSlug = $request->document_type;
+            $query->whereHas('documentType', function ($q) use ($docTypeSlug) {
+                $q->where('slug', $docTypeSlug);
+            });
         }
 
         if ($request->filled('search')) {
@@ -46,19 +55,34 @@ class CvController extends Controller
         }
 
         $cvs = $query->latest('updated_at')->paginate(9)->withQueryString();
+        $documentTypes = DocumentType::where('is_active', true)->orderBy('sort_order')->get();
 
-        return view('cvs.index', compact('cvs'));
+        return view('cvs.index', compact('cvs', 'documentTypes'));
     }
 
     /**
-     * Show the form for creating a new CV.
+     * Show the form for creating a new career document (Multi-Step Creation Wizard).
      */
     public function create(Request $request)
     {
+        $documentTypes = DocumentType::where('is_active', true)->with('activeTemplates')->orderBy('sort_order')->get();
         $categories = $this->templateService->getCategoriesWithTemplates();
-        $templates = $this->templateService->getActiveTemplates();
+        $allTemplates = $this->templateService->getActiveTemplates();
 
-        // Selected template resolution (from ?template_id= or ?template=)
+        // Selected Document Type resolution
+        $selectedType = null;
+        if ($request->filled('type')) {
+            $selectedType = DocumentType::where('slug', $request->type)->orWhere('id', $request->type)->first();
+        }
+        if (!$selectedType) {
+            $selectedType = $documentTypes->first();
+        }
+
+        // Selected Template resolution
+        $compatibleTemplates = $selectedType 
+            ? $this->templateService->getActiveTemplatesForDocumentType($selectedType->id)
+            : $allTemplates;
+
         $selectedTemplate = null;
         if ($request->filled('template_id')) {
             $selectedTemplate = $this->templateService->findTemplate($request->template_id);
@@ -67,24 +91,40 @@ class CvController extends Controller
         }
 
         if (!$selectedTemplate) {
-            $selectedTemplate = $this->templateService->getDefaultTemplate();
+            $selectedTemplate = $this->templateService->getDefaultTemplate($selectedType);
         }
 
-        return view('cvs.create', compact('categories', 'templates', 'selectedTemplate'));
+        return view('cvs.create', compact(
+            'documentTypes',
+            'categories',
+            'allTemplates',
+            'compatibleTemplates',
+            'selectedType',
+            'selectedTemplate'
+        ));
     }
 
     /**
-     * Store a newly created CV.
-     * Newly created CVs are never forced to publish immediately.
+     * Store a newly created career document.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
+            'document_type_id' => ['nullable', 'exists:document_types,id'],
             'template_id' => ['nullable', 'exists:cv_templates,id'],
             'template_key' => ['nullable', 'string', 'max:50'],
             'job_title' => ['nullable', 'string', 'max:255'],
+            'company_or_institution' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $docType = null;
+        if (!empty($validated['document_type_id'])) {
+            $docType = DocumentType::find($validated['document_type_id']);
+        }
+        if (!$docType) {
+            $docType = DocumentType::where('slug', 'standard-cv')->first() ?? DocumentType::first();
+        }
 
         $template = null;
         if (!empty($validated['template_id'])) {
@@ -94,18 +134,29 @@ class CvController extends Controller
         }
 
         if (!$template) {
-            $template = $this->templateService->getDefaultTemplate();
+            $template = $this->templateService->getDefaultTemplate($docType);
         }
 
-        $cv = DB::transaction(function () use ($validated, $template) {
+        $cv = DB::transaction(function () use ($validated, $docType, $template) {
             $cv = Cv::create([
                 'user_id' => Auth::id(),
+                'document_type_id' => $docType?->id,
                 'template_id' => $template?->id,
                 'title' => $validated['title'],
                 'slug' => Str::slug($validated['title']) . '-' . Str::random(6),
                 'status' => 'draft',
                 'template_key' => $template?->key ?? 'classic-executive',
                 'completion_percentage' => 15,
+                'settings' => [
+                    'font_family' => ($docType?->slug === 'motivation-letter') ? 'Georgia' : 'Inter',
+                    'accent_color' => ($docType?->slug === 'motivation-letter') ? '#8c1d40' : '#1e293b',
+                    'font_size' => 'normal',
+                    'heading_size' => 'normal',
+                    'line_spacing' => 'normal',
+                    'section_spacing' => 'normal',
+                    'photo_size' => 'medium',
+                    'show_icons' => true,
+                ],
             ]);
 
             // Create initial personal info record
@@ -116,14 +167,36 @@ class CvController extends Controller
                 'job_title' => $validated['job_title'] ?? null,
             ]);
 
+            // If Letter-based document type, initialize structured letter details
+            if ($docType && $docType->isLetterBased()) {
+                $isMotivation = $docType->slug === 'motivation-letter';
+                DocumentLetterDetail::create([
+                    'cv_id' => $cv->id,
+                    'recipient_name' => $isMotivation ? 'Graduate Admissions Committee' : 'Hiring Team / Hiring Manager',
+                    'recipient_title' => $isMotivation ? 'Department Admissions' : 'Director of Talent',
+                    'company_name' => $validated['company_or_institution'] ?? ($isMotivation ? 'Target University / Institution' : 'Target Company'),
+                    'letter_date' => date('F j, Y'),
+                    'subject' => $isMotivation 
+                        ? 'Statement of Purpose – ' . ($validated['job_title'] ?? 'Graduate Program Application')
+                        : 'Application for ' . ($validated['job_title'] ?? 'Professional Position'),
+                    'salutation' => $isMotivation ? 'Dear Members of the Admissions Committee,' : 'Dear Hiring Manager,',
+                    'closing' => $isMotivation ? 'Respectfully submitted,' : 'Sincerely,',
+                    'sender_signature' => Auth::user()->name,
+                ]);
+            }
+
             return $cv;
         });
 
-        return redirect()->route('cvs.builder.show', ['cv' => $cv, 'section' => 'personal-info'])->with('success', 'CV draft created! Continue adding your details.');
+        $initialSection = $cv->isLetter() ? 'letter-details' : 'personal-info';
+        $docName = $docType?->name ?? 'Document';
+
+        return redirect()->route('cvs.builder.show', ['cv' => $cv, 'section' => $initialSection])
+            ->with('success', "'{$docName}' created! Continue adding your details.");
     }
 
     /**
-     * Display the specified CV using its dynamic selected template.
+     * Display the specified document using its selected template.
      */
     public function show(Cv $cv)
     {
@@ -132,13 +205,13 @@ class CvController extends Controller
         $cvData = $this->templateService->prepareCvData($cv);
         $templateModel = $cv->template ?? $this->templateService->findTemplate($cv->template_key);
         $templateView = $this->templateService->resolveViewPath($templateModel);
-        $activeTemplates = $this->templateService->getActiveTemplates();
+        $activeTemplates = $this->templateService->getActiveTemplatesForDocumentType($cv->document_type_id);
 
         return view('cvs.show', compact('cv', 'cvData', 'templateModel', 'templateView', 'activeTemplates'));
     }
 
     /**
-     * Switch template for an existing CV on the fly without losing any data.
+     * Switch template for an existing document on the fly without losing data.
      */
     public function switchTemplate(Request $request, Cv $cv)
     {
@@ -163,11 +236,11 @@ class CvController extends Controller
             ]);
         }
 
-        return back()->with('success', "Template switched to '{$template->name}'. All your CV content is preserved.");
+        return back()->with('success', "Template switched to '{$template->name}'. All your document content is preserved.");
     }
 
     /**
-     * Show the form for editing the CV (redirects to section builder).
+     * Show the form for editing the document (redirects to section builder).
      */
     public function edit(Cv $cv)
     {
@@ -177,7 +250,7 @@ class CvController extends Controller
     }
 
     /**
-     * Update the specified CV in storage.
+     * Update the specified document in storage.
      */
     public function update(Request $request, Cv $cv)
     {
@@ -204,6 +277,20 @@ class CvController extends Controller
             'personal_info.website' => ['nullable', 'url', 'max:255'],
             'personal_info.linkedin' => ['nullable', 'string', 'max:255'],
             'personal_info.github' => ['nullable', 'string', 'max:255'],
+
+            // Letter Details
+            'letter_detail.recipient_name' => ['nullable', 'string', 'max:255'],
+            'letter_detail.recipient_title' => ['nullable', 'string', 'max:255'],
+            'letter_detail.company_name' => ['nullable', 'string', 'max:255'],
+            'letter_detail.company_address' => ['nullable', 'string'],
+            'letter_detail.letter_date' => ['nullable', 'string', 'max:50'],
+            'letter_detail.subject' => ['nullable', 'string', 'max:255'],
+            'letter_detail.salutation' => ['nullable', 'string', 'max:255'],
+            'letter_detail.opening' => ['nullable', 'string'],
+            'letter_detail.body' => ['nullable', 'string'],
+            'letter_detail.call_to_action' => ['nullable', 'string'],
+            'letter_detail.closing' => ['nullable', 'string', 'max:100'],
+            'letter_detail.sender_signature' => ['nullable', 'string', 'max:255'],
 
             // Collections
             'experiences' => ['nullable', 'array'],
@@ -266,11 +353,10 @@ class CvController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request, $cv) {
-            // Determine action status
             $action = $request->input('action', 'save_draft');
             $status = ($action === 'publish') ? 'published' : ($validated['status'] ?? $cv->status);
 
-            // Update main CV
+            // Update main record
             $cv->update([
                 'title' => $validated['title'],
                 'summary' => $validated['summary'] ?? null,
@@ -289,9 +375,17 @@ class CvController extends Controller
                 );
             }
 
+            // Update Letter Details if present
+            if (isset($validated['letter_detail'])) {
+                $cv->letterDetail()->updateOrCreate(
+                    ['cv_id' => $cv->id],
+                    $validated['letter_detail']
+                );
+            }
+
             // Sync Experiences
-            $cv->experiences()->delete();
-            if (!empty($validated['experiences'])) {
+            if (isset($validated['experiences'])) {
+                $cv->experiences()->delete();
                 foreach ($validated['experiences'] as $index => $item) {
                     if (!empty($item['job_title']) || !empty($item['employer'])) {
                         $cv->experiences()->create(array_merge($item, [
@@ -303,8 +397,8 @@ class CvController extends Controller
             }
 
             // Sync Educations
-            $cv->educations()->delete();
-            if (!empty($validated['educations'])) {
+            if (isset($validated['educations'])) {
+                $cv->educations()->delete();
                 foreach ($validated['educations'] as $index => $item) {
                     if (!empty($item['institution']) || !empty($item['degree'])) {
                         $cv->educations()->create(array_merge($item, [
@@ -316,8 +410,8 @@ class CvController extends Controller
             }
 
             // Sync Skills
-            $cv->skills()->delete();
-            if (!empty($validated['skills'])) {
+            if (isset($validated['skills'])) {
+                $cv->skills()->delete();
                 foreach ($validated['skills'] as $index => $item) {
                     if (!empty($item['name'])) {
                         $cv->skills()->create(array_merge($item, [
@@ -328,8 +422,8 @@ class CvController extends Controller
             }
 
             // Sync Languages
-            $cv->languages()->delete();
-            if (!empty($validated['languages'])) {
+            if (isset($validated['languages'])) {
+                $cv->languages()->delete();
                 foreach ($validated['languages'] as $index => $item) {
                     if (!empty($item['language'])) {
                         $cv->languages()->create(array_merge($item, [
@@ -340,8 +434,8 @@ class CvController extends Controller
             }
 
             // Sync Projects
-            $cv->projects()->delete();
-            if (!empty($validated['projects'])) {
+            if (isset($validated['projects'])) {
+                $cv->projects()->delete();
                 foreach ($validated['projects'] as $index => $item) {
                     if (!empty($item['title'])) {
                         $cv->projects()->create(array_merge($item, [
@@ -352,8 +446,8 @@ class CvController extends Controller
             }
 
             // Sync Certifications
-            $cv->certifications()->delete();
-            if (!empty($validated['certifications'])) {
+            if (isset($validated['certifications'])) {
+                $cv->certifications()->delete();
                 foreach ($validated['certifications'] as $index => $item) {
                     if (!empty($item['name'])) {
                         $cv->certifications()->create(array_merge($item, [
@@ -364,8 +458,8 @@ class CvController extends Controller
             }
 
             // Sync Awards
-            $cv->awards()->delete();
-            if (!empty($validated['awards'])) {
+            if (isset($validated['awards'])) {
+                $cv->awards()->delete();
                 foreach ($validated['awards'] as $index => $item) {
                     if (!empty($item['title'])) {
                         $cv->awards()->create(array_merge($item, [
@@ -376,8 +470,8 @@ class CvController extends Controller
             }
 
             // Sync References
-            $cv->references()->delete();
-            if (!empty($validated['references'])) {
+            if (isset($validated['references'])) {
+                $cv->references()->delete();
                 foreach ($validated['references'] as $index => $item) {
                     if (!empty($item['full_name'])) {
                         $cv->references()->create(array_merge($item, [
@@ -393,7 +487,7 @@ class CvController extends Controller
         });
 
         $message = ($cv->status === 'published')
-            ? 'CV published successfully!'
+            ? 'Document published successfully!'
             : 'Draft saved successfully.';
 
         if ($request->input('redirect_to') === 'show') {
@@ -404,7 +498,7 @@ class CvController extends Controller
     }
 
     /**
-     * Duplicate an existing CV.
+     * Duplicate an existing document with all associated data.
      */
     public function duplicate(Cv $cv)
     {
@@ -420,8 +514,10 @@ class CvController extends Controller
             $newCv->slug = Str::slug($newCv->title) . '-' . Str::random(6);
             $newCv->status = 'draft';
             $newCv->user_id = Auth::id();
+            $newCv->document_type_id = $cv->document_type_id;
             $newCv->template_id = $cv->template_id;
             $newCv->template_key = $cv->template_key;
+            $newCv->settings = $cv->settings;
             $newCv->save();
 
             // Duplicate Personal Info
@@ -429,6 +525,13 @@ class CvController extends Controller
                 $info = $cv->personalInfo->replicate(['cv_id', 'created_at', 'updated_at']);
                 $info->cv_id = $newCv->id;
                 $info->save();
+            }
+
+            // Duplicate Letter Details
+            if ($cv->letterDetail) {
+                $letter = $cv->letterDetail->replicate(['cv_id', 'created_at', 'updated_at']);
+                $letter->cv_id = $newCv->id;
+                $letter->save();
             }
 
             // Duplicate Experiences
@@ -497,7 +600,7 @@ class CvController extends Controller
             return $newCv;
         });
 
-        return redirect()->route('cvs.index')->with('success', "CV '{$newCv->title}' duplicated successfully.");
+        return redirect()->route('cvs.index')->with('success', "Document '{$newCv->title}' duplicated successfully.");
     }
 
     /**
@@ -511,11 +614,11 @@ class CvController extends Controller
         $cv->save();
 
         $statusLabel = ucfirst($cv->status);
-        return back()->with('success', "CV status changed to {$statusLabel}.");
+        return back()->with('success', "Document status changed to {$statusLabel}.");
     }
 
     /**
-     * Remove the specified CV from storage.
+     * Remove the specified document from storage.
      */
     public function destroy(Cv $cv)
     {
@@ -524,6 +627,6 @@ class CvController extends Controller
         $title = $cv->title;
         $cv->delete();
 
-        return redirect()->route('cvs.index')->with('success', "CV '{$title}' has been deleted.");
+        return redirect()->route('cvs.index')->with('success', "Document '{$title}' has been deleted.");
     }
 }

@@ -12,8 +12,11 @@ class Cv extends Model
 {
     use HasFactory;
 
+    protected $table = 'cvs';
+
     protected $fillable = [
         'user_id',
+        'document_type_id',
         'template_id',
         'title',
         'slug',
@@ -22,17 +25,25 @@ class Cv extends Model
         'template_key',
         'primary_color',
         'font_family',
+        'settings',
         'completion_percentage',
     ];
 
     protected $casts = [
         'completion_percentage' => 'integer',
         'template_id' => 'integer',
+        'document_type_id' => 'integer',
+        'settings' => 'array',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function documentType(): BelongsTo
+    {
+        return $this->belongsTo(DocumentType::class, 'document_type_id');
     }
 
     public function template(): BelongsTo
@@ -42,52 +53,57 @@ class Cv extends Model
 
     public function personalInfo(): HasOne
     {
-        return $this->hasOne(CvPersonalInfo::class);
+        return $this->hasOne(CvPersonalInfo::class, 'cv_id');
+    }
+
+    public function letterDetail(): HasOne
+    {
+        return $this->hasOne(DocumentLetterDetail::class, 'cv_id');
     }
 
     public function experiences(): HasMany
     {
-        return $this->hasMany(CvExperience::class)->orderBy('sort_order')->orderBy('start_date', 'desc');
+        return $this->hasMany(CvExperience::class, 'cv_id')->orderBy('sort_order')->orderBy('start_date', 'desc');
     }
 
     public function educations(): HasMany
     {
-        return $this->hasMany(CvEducation::class)->orderBy('sort_order')->orderBy('start_date', 'desc');
+        return $this->hasMany(CvEducation::class, 'cv_id')->orderBy('sort_order')->orderBy('start_date', 'desc');
     }
 
     public function skills(): HasMany
     {
-        return $this->hasMany(CvSkill::class)->orderBy('sort_order');
+        return $this->hasMany(CvSkill::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function languages(): HasMany
     {
-        return $this->hasMany(CvLanguage::class)->orderBy('sort_order');
+        return $this->hasMany(CvLanguage::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function certifications(): HasMany
     {
-        return $this->hasMany(CvCertification::class)->orderBy('sort_order');
+        return $this->hasMany(CvCertification::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function projects(): HasMany
     {
-        return $this->hasMany(CvProject::class)->orderBy('sort_order');
+        return $this->hasMany(CvProject::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function awards(): HasMany
     {
-        return $this->hasMany(CvAward::class)->orderBy('sort_order');
+        return $this->hasMany(CvAward::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function references(): HasMany
     {
-        return $this->hasMany(CvReference::class)->orderBy('sort_order');
+        return $this->hasMany(CvReference::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function customSections(): HasMany
     {
-        return $this->hasMany(CvCustomSection::class)->orderBy('sort_order');
+        return $this->hasMany(CvCustomSection::class, 'cv_id')->orderBy('sort_order');
     }
 
     public function isDraft(): bool
@@ -100,47 +116,77 @@ class Cv extends Model
         return $this->status === 'published';
     }
 
+    public function isLetter(): bool
+    {
+        return $this->documentType?->isLetterBased() || in_array($this->documentType?->slug, ['cover-letter', 'motivation-letter']);
+    }
+
     /**
-     * Compute completion percentage based on filled sections.
+     * Retrieve a specific customization setting with fallback.
+     */
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        $settings = $this->settings ?? [];
+        return $settings[$key] ?? $default;
+    }
+
+    /**
+     * Compute completion percentage based on filled sections according to document type.
      */
     public function calculateCompletion(): int
     {
         $score = 0;
 
-        // Title & basic info (15)
+        // Title is always present (10 pts)
         if (!empty($this->title)) $score += 10;
 
-        // Summary (15)
-        if (!empty(trim($this->summary ?? ''))) $score += 15;
+        if ($this->isLetter()) {
+            // Letter-specific calculation
+            if ($this->personalInfo && !empty($this->personalInfo->full_name) && !empty($this->personalInfo->email)) {
+                $score += 25; // Sender info
+            }
 
-        // Personal Info (20)
-        if ($this->personalInfo && !empty($this->personalInfo->full_name) && !empty($this->personalInfo->email)) {
-            $score += 20;
-        }
+            if ($this->letterDetail) {
+                if (!empty($this->letterDetail->recipient_name) || !empty($this->letterDetail->company_name)) {
+                    $score += 20; // Recipient/Company
+                }
+                if (!empty($this->letterDetail->salutation)) {
+                    $score += 10; // Greeting
+                }
+                if (!empty($this->letterDetail->body) || !empty($this->letterDetail->opening)) {
+                    $score += 25; // Body/Motivation
+                }
+                if (!empty($this->letterDetail->closing) || !empty($this->letterDetail->sender_signature)) {
+                    $score += 10; // Closing & Sign-off
+                }
+            }
+        } else {
+            // CV/Resume calculation
+            if (!empty(trim($this->summary ?? ''))) $score += 15;
 
-        // Experiences (20)
-        if ($this->experiences()->count() > 0) {
-            $score += 20;
-        }
+            if ($this->personalInfo && !empty($this->personalInfo->full_name) && !empty($this->personalInfo->email)) {
+                $score += 20;
+            }
 
-        // Educations (15)
-        if ($this->educations()->count() > 0) {
-            $score += 15;
-        }
+            if ($this->experiences()->count() > 0) {
+                $score += 20;
+            }
 
-        // Skills (10)
-        if ($this->skills()->count() > 0) {
-            $score += 10;
-        }
+            if ($this->educations()->count() > 0) {
+                $score += 15;
+            }
 
-        // Languages (5)
-        if ($this->languages()->count() > 0) {
-            $score += 5;
-        }
+            if ($this->skills()->count() > 0) {
+                $score += 10;
+            }
 
-        // Projects (5)
-        if ($this->projects()->count() > 0) {
-            $score += 5;
+            if ($this->languages()->count() > 0) {
+                $score += 5;
+            }
+
+            if ($this->projects()->count() > 0) {
+                $score += 5;
+            }
         }
 
         return min(100, $score);
@@ -151,6 +197,42 @@ class Cv extends Model
      */
     public function getSectionChecklist(): array
     {
+        if ($this->isLetter()) {
+            $hasSender = $this->personalInfo && (!empty($this->personalInfo->full_name) || !empty($this->personalInfo->email));
+            $hasRecipient = $this->letterDetail && (!empty($this->letterDetail->recipient_name) || !empty($this->letterDetail->company_name));
+            $hasBody = $this->letterDetail && (!empty($this->letterDetail->body) || !empty($this->letterDetail->opening));
+            $hasClosing = $this->letterDetail && (!empty($this->letterDetail->closing) || !empty($this->letterDetail->sender_signature));
+
+            $isMotivation = $this->documentType?->slug === 'motivation-letter';
+
+            return [
+                'personal-info' => [
+                    'label' => 'Sender Details',
+                    'icon' => 'bi-person',
+                    'is_complete' => (bool)$hasSender,
+                    'count' => $hasSender ? 1 : 0,
+                ],
+                'letter-details' => [
+                    'label' => $isMotivation ? 'Institution & Program' : 'Recipient & Organization',
+                    'icon' => 'bi-building',
+                    'is_complete' => (bool)$hasRecipient,
+                    'count' => $hasRecipient ? 1 : 0,
+                ],
+                'letter-content' => [
+                    'label' => $isMotivation ? 'Motivation & Purpose' : 'Letter Body & Content',
+                    'icon' => 'bi-file-earmark-richtext',
+                    'is_complete' => (bool)$hasBody,
+                    'count' => $hasBody ? 1 : 0,
+                ],
+                'letter-closing' => [
+                    'label' => 'Sign-off & Closing',
+                    'icon' => 'bi-pen',
+                    'is_complete' => (bool)$hasClosing,
+                    'count' => $hasClosing ? 1 : 0,
+                ],
+            ];
+        }
+
         $hasPersonalInfo = $this->personalInfo && (!empty($this->personalInfo->full_name) || !empty($this->personalInfo->email));
         $hasSummary = !empty(trim($this->summary ?? ''));
         $expCount = $this->experiences()->count();

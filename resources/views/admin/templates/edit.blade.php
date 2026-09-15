@@ -11,7 +11,7 @@
                 <i class="bi bi-arrow-left me-1"></i> Back to Templates
             </a>
             <h2 class="h4 fw-bold mt-2 mb-1">Edit Template: {{ $template->name }}</h2>
-            <p class="text-muted small mb-0">Update metadata, preview thumbnail, tier status, and category assignments.</p>
+            <p class="text-muted small mb-0">Update metadata, preview thumbnail, tier status, category, and compatible career document types.</p>
         </div>
 
         <div class="card card-saas">
@@ -61,6 +61,33 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+
+                    <!-- Compatible Document Types -->
+                    <div class="mb-4 p-3 bg-light rounded border">
+                        <label class="form-label fw-bold text-dark mb-2">
+                            <i class="bi bi-file-earmark-check me-1 text-primary"></i> Compatible Document Types
+                        </label>
+                        <p class="text-muted small mb-2">Select which career document types can use this template:</p>
+                        @php
+                            $selectedTypeIds = old('document_type_ids', $template->documentTypes->pluck('id')->toArray());
+                        @endphp
+                        <div class="row g-2">
+                            @foreach($documentTypes as $docType)
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="document_type_ids[]" value="{{ $docType->id }}" id="docTypeCheck_{{ $docType->id }}" 
+                                               {{ in_array($docType->id, $selectedTypeIds) ? 'checked' : '' }}>
+                                        <label class="form-check-label small fw-semibold" for="docTypeCheck_{{ $docType->id }}">
+                                            <i class="bi {{ $docType->icon }} me-1 text-muted"></i> {{ $docType->name }}
+                                        </label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        @error('document_type_ids')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="mb-4">

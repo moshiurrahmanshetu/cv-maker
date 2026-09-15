@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
@@ -47,6 +48,15 @@ class CvTemplate extends Model
     }
 
     /**
+     * Compatible document types for this template.
+     */
+    public function documentTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(DocumentType::class, 'document_type_template', 'cv_template_id', 'document_type_id')
+            ->withTimestamps();
+    }
+
+    /**
      * Scope for active templates.
      */
     public function scopeActive($query)
@@ -68,6 +78,24 @@ class CvTemplate extends Model
     public function scopePremium($query)
     {
         return $query->where('is_premium', true);
+    }
+
+    /**
+     * Scope templates compatible with a given document type.
+     */
+    public function scopeForDocumentType($query, int|string|null $documentType)
+    {
+        if (empty($documentType)) {
+            return $query;
+        }
+
+        return $query->whereHas('documentTypes', function ($q) use ($documentType) {
+            if (is_numeric($documentType)) {
+                $q->where('document_types.id', $documentType);
+            } else {
+                $q->where('document_types.slug', $documentType);
+            }
+        });
     }
 
     /**

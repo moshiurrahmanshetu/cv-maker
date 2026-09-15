@@ -60,4 +60,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Cv::class);
     }
+
+    /**
+     * User's Career Documents.
+     */
+    public function documents()
+    {
+        return $this->hasMany(Cv::class);
+    }
 }
+

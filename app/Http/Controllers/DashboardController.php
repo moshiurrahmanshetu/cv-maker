@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $draftCvs = $user->cvs()->where('status', 'draft')->count();
         
         $recentCvs = $user->cvs()
-            ->with(['personalInfo'])
+            ->with(['documentType', 'personalInfo', 'letterDetail', 'template'])
             ->latest('updated_at')
             ->take(6)
             ->get();
