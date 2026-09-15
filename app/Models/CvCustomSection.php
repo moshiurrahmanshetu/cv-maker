@@ -15,6 +15,9 @@ class CvCustomSection extends Model
     protected $fillable = [
         'cv_id',
         'section_title',
+        'title',
+        'subtitle',
+        'date_period',
         'content',
         'sort_order',
     ];

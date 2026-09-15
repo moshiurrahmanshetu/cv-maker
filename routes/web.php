@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\CvBuilderController;
 use App\Http\Controllers\CvController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
@@ -55,6 +56,18 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{cv}', [CvController::class, 'destroy'])->name('destroy');
         Route::post('/{cv}/duplicate', [CvController::class, 'duplicate'])->name('duplicate');
         Route::post('/{cv}/toggle-status', [CvController::class, 'toggleStatus'])->name('toggle-status');
+
+        // Phase 2 - Section-Driven CV Builder Routes
+        Route::prefix('{cv}/builder')->name('builder.')->group(function () {
+            Route::get('/', [CvBuilderController::class, 'show'])->name('show');
+            Route::post('/personal-info', [CvBuilderController::class, 'savePersonalInfo'])->name('personal-info');
+            Route::post('/summary', [CvBuilderController::class, 'saveSummary'])->name('summary');
+            Route::post('/items/{section}', [CvBuilderController::class, 'storeItem'])->name('items.store');
+            Route::put('/items/{section}/{id}', [CvBuilderController::class, 'updateItem'])->name('items.update');
+            Route::delete('/items/{section}/{id}', [CvBuilderController::class, 'deleteItem'])->name('items.destroy');
+            Route::post('/items/{section}/reorder', [CvBuilderController::class, 'reorderItems'])->name('items.reorder');
+            Route::post('/references/{id}/toggle-visibility', [CvBuilderController::class, 'toggleReferenceVisibility'])->name('references.toggle-visibility');
+        });
     });
 
     // Admin Panel Routes (Protected by Role Middleware)

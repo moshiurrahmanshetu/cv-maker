@@ -99,13 +99,16 @@ class Cv extends Model
     public function calculateCompletion(): int
     {
         $score = 0;
-        // Title & basic info (20)
-        if (!empty($this->title)) $score += 15;
-        if (!empty($this->summary)) $score += 10;
 
-        // Personal Info (25)
+        // Title & basic info (15)
+        if (!empty($this->title)) $score += 10;
+
+        // Summary (15)
+        if (!empty(trim($this->summary ?? ''))) $score += 15;
+
+        // Personal Info (20)
         if ($this->personalInfo && !empty($this->personalInfo->full_name) && !empty($this->personalInfo->email)) {
-            $score += 25;
+            $score += 20;
         }
 
         // Experiences (20)
@@ -123,11 +126,103 @@ class Cv extends Model
             $score += 10;
         }
 
-        // Extra (Languages / Projects / Certs) (5)
-        if ($this->languages()->count() > 0 || $this->projects()->count() > 0 || $this->certifications()->count() > 0) {
+        // Languages (5)
+        if ($this->languages()->count() > 0) {
+            $score += 5;
+        }
+
+        // Projects (5)
+        if ($this->projects()->count() > 0) {
             $score += 5;
         }
 
         return min(100, $score);
+    }
+
+    /**
+     * Get section checklist metadata for the builder navigation and sidebar checklist.
+     */
+    public function getSectionChecklist(): array
+    {
+        $hasPersonalInfo = $this->personalInfo && (!empty($this->personalInfo->full_name) || !empty($this->personalInfo->email));
+        $hasSummary = !empty(trim($this->summary ?? ''));
+        $expCount = $this->experiences()->count();
+        $eduCount = $this->educations()->count();
+        $skillCount = $this->skills()->count();
+        $langCount = $this->languages()->count();
+        $certCount = $this->certifications()->count();
+        $projCount = $this->projects()->count();
+        $awardCount = $this->awards()->count();
+        $refCount = $this->references()->count();
+        $customCount = $this->customSections()->count();
+
+        return [
+            'personal-info' => [
+                'label' => 'Personal Information',
+                'icon' => 'bi-person',
+                'is_complete' => (bool)$hasPersonalInfo,
+                'count' => $hasPersonalInfo ? 1 : 0,
+            ],
+            'summary' => [
+                'label' => 'Profile Summary',
+                'icon' => 'bi-card-text',
+                'is_complete' => $hasSummary,
+                'count' => $hasSummary ? 1 : 0,
+            ],
+            'experience' => [
+                'label' => 'Work Experience',
+                'icon' => 'bi-briefcase',
+                'is_complete' => $expCount > 0,
+                'count' => $expCount,
+            ],
+            'education' => [
+                'label' => 'Education',
+                'icon' => 'bi-mortarboard',
+                'is_complete' => $eduCount > 0,
+                'count' => $eduCount,
+            ],
+            'skills' => [
+                'label' => 'Skills',
+                'icon' => 'bi-tools',
+                'is_complete' => $skillCount > 0,
+                'count' => $skillCount,
+            ],
+            'languages' => [
+                'label' => 'Languages',
+                'icon' => 'bi-translate',
+                'is_complete' => $langCount > 0,
+                'count' => $langCount,
+            ],
+            'certifications' => [
+                'label' => 'Certifications',
+                'icon' => 'bi-patch-check',
+                'is_complete' => $certCount > 0,
+                'count' => $certCount,
+            ],
+            'projects' => [
+                'label' => 'Projects',
+                'icon' => 'bi-folder-check',
+                'is_complete' => $projCount > 0,
+                'count' => $projCount,
+            ],
+            'awards' => [
+                'label' => 'Awards',
+                'icon' => 'bi-trophy',
+                'is_complete' => $awardCount > 0,
+                'count' => $awardCount,
+            ],
+            'references' => [
+                'label' => 'References',
+                'icon' => 'bi-people',
+                'is_complete' => $refCount > 0,
+                'count' => $refCount,
+            ],
+            'custom' => [
+                'label' => 'Custom Sections',
+                'icon' => 'bi-plus-square',
+                'is_complete' => $customCount > 0,
+                'count' => $customCount,
+            ],
+        ];
     }
 }

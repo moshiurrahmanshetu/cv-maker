@@ -85,7 +85,7 @@ class CvController extends Controller
             return $cv;
         });
 
-        return redirect()->route('cvs.edit', $cv)->with('success', 'CV draft created! Continue adding your details.');
+        return redirect()->route('cvs.builder.show', ['cv' => $cv, 'section' => 'personal-info'])->with('success', 'CV draft created! Continue adding your details.');
     }
 
     /**
@@ -112,26 +112,13 @@ class CvController extends Controller
     }
 
     /**
-     * Show the form for editing the CV.
+     * Show the form for editing the CV (redirects to section builder).
      */
     public function edit(Cv $cv)
     {
         $this->authorize('update', $cv);
 
-        $cv->load([
-            'personalInfo',
-            'experiences',
-            'educations',
-            'skills',
-            'languages',
-            'certifications',
-            'projects',
-            'awards',
-            'references',
-            'customSections',
-        ]);
-
-        return view('cvs.edit', compact('cv'));
+        return redirect()->route('cvs.builder.show', $cv);
     }
 
     /**

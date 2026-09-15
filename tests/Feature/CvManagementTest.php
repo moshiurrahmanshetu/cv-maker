@@ -26,7 +26,7 @@ class CvManagementTest extends TestCase
         $this->assertEquals($user->id, $cv->user_id);
         $this->assertEquals('Software Architect', $cv->personalInfo->job_title);
 
-        $response->assertRedirect("/cvs/{$cv->id}/edit");
+        $response->assertRedirect("/cvs/{$cv->id}/builder?section=personal-info");
     }
 
     public function test_user_can_edit_and_save_cv_as_draft(): void

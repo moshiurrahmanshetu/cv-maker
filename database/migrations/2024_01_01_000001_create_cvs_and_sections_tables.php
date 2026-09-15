@@ -41,6 +41,7 @@ return new class extends Migration
             $table->string('website')->nullable();
             $table->string('linkedin')->nullable();
             $table->string('github')->nullable();
+            $table->string('other_url')->nullable();
             $table->string('photo_path')->nullable();
             $table->timestamps();
         });
@@ -85,6 +86,7 @@ return new class extends Migration
             $table->foreignId('cv_id')->constrained('cvs')->onDelete('cascade');
             $table->string('name');
             $table->string('level', 30)->nullable(); // Beginner, Intermediate, Advanced, Expert
+            $table->unsignedTinyInteger('rating')->default(80); // 1-100 percentage for versatile rendering
             $table->string('category', 50)->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
@@ -110,6 +112,7 @@ return new class extends Migration
             $table->string('expiration_date')->nullable();
             $table->string('credential_id')->nullable();
             $table->string('credential_url')->nullable();
+            $table->text('description')->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
         });
@@ -121,6 +124,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('role')->nullable();
             $table->string('project_url')->nullable();
+            $table->string('technologies')->nullable();
             $table->string('start_date')->nullable();
             $table->string('end_date')->nullable();
             $table->text('description')->nullable();
@@ -150,6 +154,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('relationship')->nullable();
+            $table->boolean('is_hidden')->default(false);
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
         });
@@ -159,6 +164,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cv_id')->constrained('cvs')->onDelete('cascade');
             $table->string('section_title');
+            $table->string('title')->nullable();
+            $table->string('subtitle')->nullable();
+            $table->string('date_period')->nullable();
             $table->text('content')->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();

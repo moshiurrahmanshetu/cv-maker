@@ -20,10 +20,12 @@ class CvReference extends Model
         'email',
         'phone',
         'relationship',
+        'is_hidden',
         'sort_order',
     ];
 
     protected $casts = [
+        'is_hidden' => 'boolean',
         'sort_order' => 'integer',
     ];
 

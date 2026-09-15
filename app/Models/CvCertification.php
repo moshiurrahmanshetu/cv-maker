@@ -20,6 +20,7 @@ class CvCertification extends Model
         'expiration_date',
         'credential_id',
         'credential_url',
+        'description',
         'sort_order',
     ];
 

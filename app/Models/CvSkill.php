@@ -16,11 +16,13 @@ class CvSkill extends Model
         'cv_id',
         'name',
         'level',
+        'rating',
         'category',
         'sort_order',
     ];
 
     protected $casts = [
+        'rating' => 'integer',
         'sort_order' => 'integer',
     ];
 

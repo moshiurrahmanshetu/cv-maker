@@ -17,6 +17,7 @@ class CvProject extends Model
         'title',
         'role',
         'project_url',
+        'technologies',
         'start_date',
         'end_date',
         'description',
