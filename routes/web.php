@@ -83,8 +83,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/items/{section}/reorder', [CvBuilderController::class, 'reorderItems'])->name('items.reorder');
             Route::post('/references/{id}/toggle-visibility', [CvBuilderController::class, 'toggleReferenceVisibility'])->name('references.toggle-visibility');
 
-            // Phase 5: AI Career Assistant Endpoints
-            Route::prefix('ai')->name('ai.')->group(function () {
+            // Phase 5: AI Career Assistant Endpoints (Protected with 30 req/min throttle)
+            Route::prefix('ai')->name('ai.')->middleware('throttle:30,1')->group(function () {
                 Route::post('/summary', [\App\Http\Controllers\AiAssistantController::class, 'generateSummary'])->name('summary');
                 Route::post('/objective', [\App\Http\Controllers\AiAssistantController::class, 'generateObjective'])->name('objective');
                 Route::post('/experience', [\App\Http\Controllers\AiAssistantController::class, 'rewriteExperience'])->name('experience');
