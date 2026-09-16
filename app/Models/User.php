@@ -78,12 +78,57 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has access to premium templates and downloads.
-     * Foundation for Phase 11 billing / subscriptions.
+     * User's purchase orders.
      */
-    public function hasPremiumAccess(): bool
+    public function orders()
     {
-        return $this->isAdmin() || (bool)($this->is_premium ?? false);
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * User's active product/template entitlements.
+     */
+    public function entitlements()
+    {
+        return $this->hasMany(UserEntitlement::class);
+    }
+
+    /**
+     * Check if user has access to a specific template.
+     */
+    public function hasAccessToTemplate(?CvTemplate $template = null): bool
+    {
+        if ($this->isAdmin() || (bool)($this->is_premium ?? false)) {
+            return true;
+        }
+
+        if (!$template || !$template->is_premium) {
+            return true;
+        }
+
+        return $this->entitlements()
+            ->where('status', 'active')
+            ->where(function ($q) use ($template) {
+                $q->where('cv_template_id', $template->id)
+                  ->orWhere('entitlement_type', 'all_access');
+            })
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+            })
+            ->exists();
+    }
+
+    /**
+     * Check if user has access to premium templates and downloads.
+     */
+    public function hasPremiumAccess(?CvTemplate $template = null): bool
+    {
+        if ($template) {
+            return $this->hasAccessToTemplate($template);
+        }
+
+        return $this->isAdmin() || (bool)($this->is_premium ?? false) || $this->entitlements()->where('status', 'active')->exists();
     }
 }
 

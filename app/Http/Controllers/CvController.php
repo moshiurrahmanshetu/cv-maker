@@ -640,9 +640,10 @@ class CvController extends Controller
     {
         $this->authorize('view', $cv);
 
-        // Check premium status eligibility (Phase 11 foundation)
-        if ($cv->isPremium() && !Auth::user()->hasPremiumAccess()) {
-            return back()->with('error', 'This document uses a premium template. Please upgrade your account to export.');
+        // Server-side Premium Entitlement Verification
+        if ($cv->isPremium() && !Auth::user()->hasAccessToTemplate($cv->template)) {
+            return redirect()->route('checkout.template', $cv->template)
+                ->with('error', "This document uses the premium template '{$cv->template->name}'. Please unlock it to download PDF exports.");
         }
 
         return $this->pdfService->generate($cv, [

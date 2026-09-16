@@ -48,6 +48,38 @@ class CvTemplate extends Model
     }
 
     /**
+     * Associated product for purchasing this template.
+     */
+    public function product()
+    {
+        return $this->hasOne(Product::class, 'cv_template_id');
+    }
+
+    /**
+     * Get authoritative price for this template.
+     */
+    public function getPrice(): float
+    {
+        if (!$this->is_premium) {
+            return 0.00;
+        }
+
+        return (float) ($this->product?->price ?? 4.99);
+    }
+
+    /**
+     * Formatted price string.
+     */
+    public function getFormattedPrice(): string
+    {
+        if (!$this->is_premium) {
+            return 'Free';
+        }
+
+        return '$' . number_format($this->getPrice(), 2);
+    }
+
+    /**
      * Compatible document types for this template.
      */
     public function documentTypes(): BelongsToMany

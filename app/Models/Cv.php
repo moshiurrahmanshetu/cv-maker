@@ -353,5 +353,21 @@ class Cv extends Model
     {
         return (bool)($this->template?->is_premium ?? false);
     }
+
+    /**
+     * Check if user is authorized to download PDF for this document.
+     */
+    public function isDownloadableBy(User $user): bool
+    {
+        if ($this->user_id !== $user->id && !$user->isAdmin()) {
+            return false;
+        }
+
+        if (!$this->isPremium()) {
+            return true;
+        }
+
+        return $user->hasAccessToTemplate($this->template);
+    }
 }
 

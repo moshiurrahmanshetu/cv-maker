@@ -152,8 +152,9 @@ class CvBuilderController extends Controller
     {
         $this->authorize('view', $cv);
 
-        if ($cv->isPremium() && !Auth::user()->hasPremiumAccess()) {
-            return back()->with('error', 'This document uses a premium template. Please upgrade your account to export.');
+        if ($cv->isPremium() && !Auth::user()->hasAccessToTemplate($cv->template)) {
+            return redirect()->route('checkout.template', $cv->template)
+                ->with('error', "This document uses the premium template '{$cv->template->name}'. Please unlock it to export PDF.");
         }
 
         $isDownload = !$request->boolean('preview');

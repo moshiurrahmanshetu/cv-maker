@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminCvController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminDocumentTypeController;
+use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminTemplateCategoryController;
 use App\Http\Controllers\Admin\AdminTemplateController;
 use App\Http\Controllers\Admin\AdminUserController;
@@ -11,6 +12,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AtsAnalyzerController;
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CvBuilderController;
 use App\Http\Controllers\CvController;
 use App\Http\Controllers\DashboardController;
@@ -111,6 +114,21 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Phase 11: Checkout & Payment Flow Routes
+    Route::prefix('checkout')->name('checkout.')->group(function () {
+        Route::get('/template/{template}', [CheckoutController::class, 'showTemplate'])->name('template');
+        Route::post('/process', [CheckoutController::class, 'process'])->name('process');
+        Route::get('/callback/{order}', [CheckoutController::class, 'callback'])->name('callback');
+        Route::get('/success/{order}', [CheckoutController::class, 'success'])->name('success');
+        Route::get('/failed/{order}', [CheckoutController::class, 'failed'])->name('failed');
+    });
+
+    // Phase 11: Billing & Purchase History Routes
+    Route::prefix('billing')->name('billing.')->group(function () {
+        Route::get('/', [BillingController::class, 'index'])->name('index');
+        Route::get('/orders/{order}', [BillingController::class, 'showOrder'])->name('orders.show');
+    });
+
     // Admin Panel Routes (Protected by Role Middleware)
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/', function () {
@@ -133,6 +151,12 @@ Route::middleware('auth')->group(function () {
         // Phase 5: AI Usage & Telemetry Management
         Route::get('/ai', [\App\Http\Controllers\Admin\AdminAiController::class, 'index'])->name('ai.index');
 
+        // Phase 11: Orders & Payment Transactions Management
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [AdminOrderController::class, 'index'])->name('index');
+            Route::get('/{order}', [AdminOrderController::class, 'show'])->name('show');
+        });
+
         // Template Categories Management
         Route::prefix('templates')->name('templates.')->group(function () {
             Route::get('/categories', [AdminTemplateCategoryController::class, 'index'])->name('categories.index');
@@ -152,3 +176,6 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+
+// Phase 11: Payment Gateway Webhook Endpoint (Excluded from CSRF)
+Route::post('/checkout/webhook/{gateway}', [CheckoutController::class, 'webhook'])->name('checkout.webhook');
