@@ -56,6 +56,11 @@ class Cv extends Model
         return $this->hasOne(CvPersonalInfo::class, 'cv_id');
     }
 
+    public function personalInformation(): HasOne
+    {
+        return $this->personalInfo();
+    }
+
     public function letterDetail(): HasOne
     {
         return $this->hasOne(DocumentLetterDetail::class, 'cv_id');
@@ -66,9 +71,19 @@ class Cv extends Model
         return $this->hasMany(CvExperience::class, 'cv_id')->orderBy('sort_order')->orderBy('start_date', 'desc');
     }
 
+    public function workExperiences(): HasMany
+    {
+        return $this->experiences();
+    }
+
     public function educations(): HasMany
     {
         return $this->hasMany(CvEducation::class, 'cv_id')->orderBy('sort_order')->orderBy('start_date', 'desc');
+    }
+
+    public function education(): HasMany
+    {
+        return $this->educations();
     }
 
     public function skills(): HasMany
@@ -111,7 +126,18 @@ class Cv extends Model
         return $this->hasMany(AiUsageLog::class, 'cv_id');
     }
 
+    public function atsAnalyses(): HasMany
+    {
+        return $this->hasMany(AtsAnalysis::class, 'cv_id')->latest();
+    }
+
+    public function latestAtsAnalysis(): HasOne
+    {
+        return $this->hasOne(AtsAnalysis::class, 'cv_id')->latestOfMany();
+    }
+
     public function isDraft(): bool
+
     {
         return $this->status === 'draft';
     }

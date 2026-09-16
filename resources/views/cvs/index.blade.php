@@ -163,6 +163,9 @@
 
                         <div class="d-flex align-items-center justify-content-between gap-1">
                             <div class="d-flex gap-1">
+                                <a href="{{ route('cvs.ats.show', $cv) }}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="ATS Scanner & Job Match">
+                                    <i class="bi bi-shield-check text-success"></i>
+                                </a>
                                 <a href="{{ route('cvs.show', $cv) }}" class="btn btn-sm btn-saas-secondary py-1 px-2" title="Preview Document">
                                     <i class="bi bi-eye"></i>
                                 </a>
@@ -180,6 +183,11 @@
                                     <i class="bi bi-three-dots"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-saas dropdown-menu-end">
+                                    <li>
+                                        <a href="{{ route('cvs.ats.show', $cv) }}" class="dropdown-item dropdown-item-saas">
+                                            <i class="bi bi-shield-check text-success"></i> ATS Scanner & Match
+                                        </a>
+                                    </li>
                                     <li>
                                         <a href="{{ route('cvs.pdf', $cv) }}" class="dropdown-item dropdown-item-saas">
                                             <i class="bi bi-file-earmark-pdf"></i> Download PDF

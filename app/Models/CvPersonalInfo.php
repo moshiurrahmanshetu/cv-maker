@@ -36,6 +36,38 @@ class CvPersonalInfo extends Model
     }
 
     /**
+     * First name accessor.
+     */
+    public function getFirstNameAttribute(): ?string
+    {
+        if (empty($this->full_name)) {
+            return null;
+        }
+        $parts = explode(' ', trim($this->full_name), 2);
+        return $parts[0] ?? null;
+    }
+
+    /**
+     * Last name accessor.
+     */
+    public function getLastNameAttribute(): ?string
+    {
+        if (empty($this->full_name)) {
+            return null;
+        }
+        $parts = explode(' ', trim($this->full_name), 2);
+        return $parts[1] ?? '';
+    }
+
+    /**
+     * Bio alias pointing to parent CV summary.
+     */
+    public function getBioAttribute(): ?string
+    {
+        return $this->cv?->summary;
+    }
+
+    /**
      * Get accessible URL for profile photo.
      */
     public function getPhotoUrlAttribute(): ?string

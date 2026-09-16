@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\AtsAnalyzerController;
 use App\Http\Controllers\CvBuilderController;
 use App\Http\Controllers\CvController;
 use App\Http\Controllers\DashboardController;
@@ -69,6 +70,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/{cv}/switch-template', [CvController::class, 'switchTemplate'])->name('switch-template');
         Route::get('/{cv}/pdf', [CvController::class, 'downloadPdf'])->name('pdf');
         Route::get('/{cv}/pdf/preview', [CvController::class, 'previewPdf'])->name('pdf.preview');
+
+        // Phase 10: ATS Analyzer & Job Matching Routes
+        Route::prefix('{cv}/ats')->name('ats.')->group(function () {
+            Route::get('/', [AtsAnalyzerController::class, 'show'])->name('show');
+            Route::post('/analyze', [AtsAnalyzerController::class, 'analyze'])->name('analyze');
+            Route::post('/match-job', [AtsAnalyzerController::class, 'matchJob'])->name('match-job');
+            Route::delete('/job', [AtsAnalyzerController::class, 'clearJob'])->name('clear-job');
+        });
 
         // Builder Routes (CV and Letter Split-Screen Workspace)
         Route::prefix('{cv}/builder')->name('builder.')->group(function () {

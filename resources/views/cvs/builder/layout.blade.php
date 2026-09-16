@@ -140,6 +140,12 @@
                     <strong>{{ $templateModel?->name ?? 'Standard' }}</strong>
                 </button>
 
+                <!-- ATS Scanner Link -->
+                <a href="{{ route('cvs.ats.show', $cv) }}" class="btn btn-outline-dark btn-sm" title="Scan ATS Compatibility & Match Job">
+                    <i class="bi bi-shield-check text-success me-1"></i>
+                    <span class="d-none d-sm-inline">ATS Scanner</span>
+                </a>
+
                 <!-- PDF Preview Link -->
                 <a href="{{ route('cvs.pdf.preview', $cv) }}" class="btn btn-saas-secondary btn-sm" target="_blank" title="Preview PDF in New Tab">
                     <i class="bi bi-file-pdf"></i>
@@ -244,6 +250,20 @@
                                 <span class="sidebar-link-text">Design & Colors</span>
                             </div>
                             <span class="badge bg-primary-subtle text-primary sidebar-badge" style="font-size: 0.65rem;">Styles</span>
+                        </a>
+
+                        <!-- ATS Scanner Nav Item -->
+                        <a href="{{ route('cvs.ats.show', $cv) }}" 
+                           class="list-group-item list-group-item-action d-flex align-items-center justify-content-between rounded-2 px-3 py-2 mb-1 border-0 sidebar-link text-dark"
+                           title="ATS Scanner & Match"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="right"
+                           style="transition: all 0.15s ease; font-size: 0.84rem;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check text-success"></i>
+                                <span class="sidebar-link-text">ATS Scanner</span>
+                            </div>
+                            <span class="badge bg-success-subtle text-success sidebar-badge" style="font-size: 0.65rem;">Scan</span>
                         </a>
                     </div>
                 </div>

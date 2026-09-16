@@ -40,6 +40,10 @@
             </div>
         </form>
 
+        <a href="{{ route('cvs.ats.show', $cv) }}" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-shield-check text-success me-1"></i> ATS Scanner
+        </a>
+
         <a href="{{ route('cvs.pdf', $cv) }}" class="btn-saas-primary btn-sm">
             <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
         </a>
