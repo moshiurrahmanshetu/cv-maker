@@ -81,6 +81,11 @@
                                         <i class="bi bi-file-earmark-text"></i> My Documents
                                     </a>
                                 </li>
+                                <li>
+                                    <a class="dropdown-item dropdown-item-saas" href="{{ route('billing.index') }}">
+                                        <i class="bi bi-credit-card-2-front"></i> Billing & Purchases
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider-saas"></li>
                                 <li>
                                     <form action="{{ route('logout') }}" method="POST">

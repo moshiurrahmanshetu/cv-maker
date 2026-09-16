@@ -28,6 +28,15 @@ class Product extends Model
         'is_active' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function ($product) {
+            if (empty($product->slug)) {
+                $product->slug = \Illuminate\Support\Str::slug($product->name);
+            }
+        });
+    }
+
     public function template(): BelongsTo
     {
         return $this->belongsTo(CvTemplate::class, 'cv_template_id');

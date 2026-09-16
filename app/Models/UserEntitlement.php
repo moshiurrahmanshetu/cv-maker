@@ -48,6 +48,16 @@ class UserEntitlement extends Model
         return $this->belongsTo(Order::class);
     }
 
+    public function getItemTypeAttribute(): string
+    {
+        return $this->entitlement_type ?? 'template';
+    }
+
+    public function getItemIdAttribute()
+    {
+        return $this->cv_template_id ?? $this->product_id;
+    }
+
     /**
      * Check if entitlement is currently active and not expired.
      */

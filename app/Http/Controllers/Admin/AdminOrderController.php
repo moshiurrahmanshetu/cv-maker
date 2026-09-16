@@ -38,14 +38,16 @@ class AdminOrderController extends Controller
         $orders = $query->paginate(15)->withQueryString();
 
         // Calculate summary metrics
-        $metrics = [
+        $stats = [
             'total_revenue' => Order::where('status', 'paid')->sum('total_amount'),
-            'paid_count' => Order::where('status', 'paid')->count(),
-            'pending_count' => Order::where('status', 'pending')->count(),
-            'failed_count' => Order::whereIn('status', ['failed', 'cancelled'])->count(),
+            'total_orders' => Order::count(),
+            'paid_orders' => Order::where('status', 'paid')->count(),
+            'failed_orders' => Order::whereIn('status', ['failed', 'cancelled'])->count(),
+            'pending_orders' => Order::where('status', 'pending')->count(),
         ];
+        $metrics = $stats;
 
-        return view('admin.orders.index', compact('orders', 'metrics'));
+        return view('admin.orders.index', compact('orders', 'stats', 'metrics'));
     }
 
     /**
@@ -54,7 +56,8 @@ class AdminOrderController extends Controller
     public function show(Order $order)
     {
         $order->load(['user', 'items.product.template', 'entitlements']);
+        $entitlements = $order->entitlements;
 
-        return view('admin.orders.show', compact('order'));
+        return view('admin.orders.show', compact('order', 'entitlements'));
     }
 }

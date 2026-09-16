@@ -37,6 +37,16 @@ class OrderItem extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function getProductNameAttribute(): string
+    {
+        return $this->item_name;
+    }
+
+    public function getUnitPriceAttribute(): float
+    {
+        return (float) $this->price;
+    }
+
     public function getFormattedSubtotalAttribute(): string
     {
         $currency = $this->order?->currency ?? 'USD';

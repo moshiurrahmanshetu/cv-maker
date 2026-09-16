@@ -169,9 +169,15 @@
                                 <a href="{{ route('cvs.show', $cv) }}" class="btn btn-sm btn-saas-secondary py-1 px-2" title="Preview Document">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{{ route('cvs.pdf', $cv) }}" class="btn btn-sm btn-saas-secondary py-1 px-2 text-dark" title="Download PDF">
-                                    <i class="bi bi-download"></i>
-                                </a>
+                                @if($cv->template && $cv->template->is_premium && !Auth::user()->hasAccessToTemplate($cv->template))
+                                    <a href="{{ route('checkout.template', ['template' => $cv->template->id, 'return_url' => url()->current()]) }}" class="btn btn-sm btn-outline-warning py-1 px-2" title="Unlock Premium Template ({{ $cv->template->getFormattedPrice() }})">
+                                        <i class="bi bi-lock-fill text-warning"></i>
+                                    </a>
+                                @else
+                                    <a href="{{ route('cvs.pdf', $cv) }}" class="btn btn-sm btn-saas-secondary py-1 px-2 text-dark" title="Download PDF">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                @endif
                                 <a href="{{ route('cvs.edit', $cv) }}" class="btn btn-sm btn-saas-primary py-1 px-2" title="{{ $cv->isDraft() ? 'Continue Draft' : 'Edit Document' }}">
                                     <i class="bi {{ $cv->isDraft() ? 'bi-pencil-square' : 'bi-pencil' }}"></i>
                                     <span class="d-none d-sm-inline ms-1">{{ $cv->isDraft() ? 'Continue Draft' : 'Edit' }}</span>

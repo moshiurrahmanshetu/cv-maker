@@ -642,8 +642,11 @@ class CvController extends Controller
 
         // Server-side Premium Entitlement Verification
         if ($cv->isPremium() && !Auth::user()->hasAccessToTemplate($cv->template)) {
-            return redirect()->route('checkout.template', $cv->template)
-                ->with('error', "This document uses the premium template '{$cv->template->name}'. Please unlock it to download PDF exports.");
+            return redirect()->route('checkout.template', [
+                'template' => $cv->template->id,
+                'return_url' => route('cvs.pdf', $cv),
+            ])->with('warning', "This document uses the premium template '{$cv->template->name}'. Please unlock it to download PDF exports.")
+              ->with('error', "This document uses the premium template '{$cv->template->name}'. Please unlock it to download PDF exports.");
         }
 
         return $this->pdfService->generate($cv, [

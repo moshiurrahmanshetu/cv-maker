@@ -114,7 +114,9 @@
                                 
                                 <div class="position-absolute top-0 start-0 m-3 d-flex gap-1">
                                     @if($template->is_premium)
-                                        <span class="badge-saas-draft">Premium</span>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold px-2 py-1">
+                                            <i class="bi bi-star-fill text-warning me-1"></i> {{ $template->getFormattedPrice() }}
+                                        </span>
                                     @else
                                         <span class="badge-saas-published">Free</span>
                                     @endif

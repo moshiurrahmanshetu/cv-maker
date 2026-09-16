@@ -17,19 +17,20 @@ class CheckoutController extends Controller
     /**
      * Display checkout review page for a premium template.
      */
-    public function showTemplate(CvTemplate $template)
+    public function showTemplate(Request $request, CvTemplate $template)
     {
         $user = Auth::user();
 
         // Check if user already owns access to this template
         if ($user && $user->hasAccessToTemplate($template)) {
-            return redirect()->route('cvs.create', ['template_id' => $template->id])
-                ->with('info', "You already own the '{$template->name}' template. Start building your document below!");
+            return redirect()->route('billing.index')
+                ->with('info', "You already own the '{$template->name}' template.");
         }
 
+        $returnUrl = $request->query('return_url');
         $availableGateways = $this->paymentService->getAvailableGateways();
 
-        return view('checkout.show', compact('template', 'availableGateways'));
+        return view('checkout.show', compact('template', 'availableGateways', 'returnUrl'));
     }
 
     /**
@@ -37,26 +38,23 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
-        $validated = $request->validate([
-            'template_id' => ['required', 'exists:cv_templates,id'],
-            'payment_provider' => ['required', 'string', 'in:mock,stripe'],
-            'mock_action' => ['nullable', 'string', 'in:success,fail,cancel'],
-        ]);
+        $templateId = $request->input('template_id') ?? $request->input('payable_id');
+        $provider = $request->input('payment_provider') ?? $request->input('payment_gateway') ?? 'mock';
 
-        $template = CvTemplate::findOrFail($validated['template_id']);
+        $template = CvTemplate::findOrFail($templateId);
         $user = Auth::user();
 
         // Prevent double purchase if already owned
         if ($user->hasAccessToTemplate($template)) {
-            return redirect()->route('cvs.create', ['template_id' => $template->id])
+            return redirect()->route('billing.index')
                 ->with('info', "You already have access to the '{$template->name}' template.");
         }
 
-        $order = $this->paymentService->createOrderForTemplate($user, $template, $validated['payment_provider']);
+        $order = $this->paymentService->createOrderForTemplate($user, $template, $provider);
 
         $options = [];
-        if ($validated['payment_provider'] === 'mock') {
-            $options['mock_action'] = $validated['mock_action'] ?? 'success';
+        if ($provider === 'mock') {
+            $options['mock_action'] = $request->input('mock_action', 'success');
         }
 
         try {

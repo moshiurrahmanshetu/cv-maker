@@ -44,9 +44,15 @@
             <i class="bi bi-shield-check text-success me-1"></i> ATS Scanner
         </a>
 
-        <a href="{{ route('cvs.pdf', $cv) }}" class="btn-saas-primary btn-sm">
-            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
-        </a>
+        @if($cv->template && $cv->template->is_premium && !Auth::user()->hasAccessToTemplate($cv->template))
+            <a href="{{ route('checkout.template', ['template' => $cv->template->id, 'return_url' => url()->current()]) }}" class="btn btn-warning btn-sm fw-bold">
+                <i class="bi bi-lock-fill me-1"></i> Unlock PDF ({{ $cv->template->getFormattedPrice() }})
+            </a>
+        @else
+            <a href="{{ route('cvs.pdf', $cv) }}" class="btn-saas-primary btn-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+            </a>
+        @endif
 
         <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => 'personal-info']) }}" class="btn-saas-secondary btn-sm">
             <i class="bi bi-pencil-square me-1"></i> Open Builder

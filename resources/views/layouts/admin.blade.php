@@ -66,6 +66,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('admin.orders.index') }}" class="sidebar-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" title="Orders & Transactions">
+                        <i class="bi bi-credit-card-2-front"></i>
+                        <span class="nav-item-text">Orders & Payments</span>
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('admin.templates.index') }}" class="sidebar-link {{ request()->routeIs('admin.templates.index', 'admin.templates.create', 'admin.templates.edit') ? 'active' : '' }}" title="CV Templates">
                         <i class="bi bi-palette"></i>
                         <span class="nav-item-text">Templates</span>
@@ -141,6 +147,12 @@
                         <a href="{{ route('admin.ai.index') }}" class="sidebar-link {{ request()->routeIs('admin.ai.*') ? 'active' : '' }}">
                             <i class="bi bi-robot"></i>
                             <span>AI Assistant</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.orders.index') }}" class="sidebar-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+                            <i class="bi bi-credit-card-2-front"></i>
+                            <span>Orders & Payments</span>
                         </a>
                     </li>
                     <li>

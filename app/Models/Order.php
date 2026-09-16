@@ -86,6 +86,11 @@ class Order extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
+        return $this->getFormattedTotal();
+    }
+
+    public function getFormattedTotal(): string
+    {
         $symbol = match ($this->currency) {
             'USD' => '$',
             'EUR' => '€',
