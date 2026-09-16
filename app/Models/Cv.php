@@ -319,4 +319,13 @@ class Cv extends Model
             ],
         ];
     }
+
+    /**
+     * Check if this CV uses a premium template or premium document type.
+     */
+    public function isPremium(): bool
+    {
+        return (bool)($this->template?->is_premium ?? false);
+    }
 }
+

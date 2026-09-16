@@ -14,16 +14,20 @@ use App\Models\CvProject;
 use App\Models\CvReference;
 use App\Models\CvSkill;
 use App\Models\DocumentLetterDetail;
+use App\Services\Pdf\PdfGeneratorService;
 use App\Services\TemplateService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class CvBuilderController extends Controller
 {
     public function __construct(
-        protected TemplateService $templateService
+        protected TemplateService $templateService,
+        protected PdfGeneratorService $pdfService
     ) {}
+
 
     /**
      * Display the CV Builder interface for a specific section.
@@ -142,6 +146,25 @@ class CvBuilderController extends Controller
     }
 
     /**
+     * Download or stream the PDF from the builder workspace.
+     */
+    public function downloadPdf(Request $request, Cv $cv)
+    {
+        $this->authorize('view', $cv);
+
+        if ($cv->isPremium() && !Auth::user()->hasPremiumAccess()) {
+            return back()->with('error', 'This document uses a premium template. Please upgrade your account to export.');
+        }
+
+        $isDownload = !$request->boolean('preview');
+
+        return $this->pdfService->generate($cv, [
+            'download' => $isDownload,
+        ]);
+    }
+
+    /**
+
      * Debounced background autosave endpoint for zero-friction editing.
      */
     public function autosave(Request $request, Cv $cv)

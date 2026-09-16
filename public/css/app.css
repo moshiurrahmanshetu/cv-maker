@@ -57,7 +57,11 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   font-weight: 700;
   letter-spacing: -0.025em;
 }
-
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1300px;
+    }
+}
 .text-muted {
   color: var(--cv-text-muted) !important;
 }

@@ -76,5 +76,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(AiUsageLog::class);
     }
+
+    /**
+     * Check if user has access to premium templates and downloads.
+     * Foundation for Phase 11 billing / subscriptions.
+     */
+    public function hasPremiumAccess(): bool
+    {
+        return $this->isAdmin() || (bool)($this->is_premium ?? false);
+    }
 }
+
 

@@ -16,6 +16,7 @@ use App\Models\CvSkill;
 use App\Models\CvTemplate;
 use App\Models\DocumentLetterDetail;
 use App\Models\DocumentType;
+use App\Services\Pdf\PdfGeneratorService;
 use App\Services\TemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,8 +26,10 @@ use Illuminate\Support\Str;
 class CvController extends Controller
 {
     public function __construct(
-        protected TemplateService $templateService
+        protected TemplateService $templateService,
+        protected PdfGeneratorService $pdfService
     ) {}
+
 
     /**
      * Display a listing of the user's career documents.
@@ -629,4 +632,34 @@ class CvController extends Controller
 
         return redirect()->route('cvs.index')->with('success', "Document '{$title}' has been deleted.");
     }
+
+    /**
+     * Download the rendered PDF for the document.
+     */
+    public function downloadPdf(Request $request, Cv $cv)
+    {
+        $this->authorize('view', $cv);
+
+        // Check premium status eligibility (Phase 11 foundation)
+        if ($cv->isPremium() && !Auth::user()->hasPremiumAccess()) {
+            return back()->with('error', 'This document uses a premium template. Please upgrade your account to export.');
+        }
+
+        return $this->pdfService->generate($cv, [
+            'download' => true,
+        ]);
+    }
+
+    /**
+     * Preview the rendered PDF directly inline in the browser.
+     */
+    public function previewPdf(Request $request, Cv $cv)
+    {
+        $this->authorize('view', $cv);
+
+        return $this->pdfService->generate($cv, [
+            'download' => false,
+        ]);
+    }
 }
+

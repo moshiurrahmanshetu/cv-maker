@@ -166,6 +166,9 @@
                                 <a href="{{ route('cvs.show', $cv) }}" class="btn btn-sm btn-saas-secondary py-1 px-2" title="Preview Document">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                <a href="{{ route('cvs.pdf', $cv) }}" class="btn btn-sm btn-saas-secondary py-1 px-2 text-dark" title="Download PDF">
+                                    <i class="bi bi-download"></i>
+                                </a>
                                 <a href="{{ route('cvs.edit', $cv) }}" class="btn btn-sm btn-saas-primary py-1 px-2" title="{{ $cv->isDraft() ? 'Continue Draft' : 'Edit Document' }}">
                                     <i class="bi {{ $cv->isDraft() ? 'bi-pencil-square' : 'bi-pencil' }}"></i>
                                     <span class="d-none d-sm-inline ms-1">{{ $cv->isDraft() ? 'Continue Draft' : 'Edit' }}</span>
@@ -177,6 +180,16 @@
                                     <i class="bi bi-three-dots"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-saas dropdown-menu-end">
+                                    <li>
+                                        <a href="{{ route('cvs.pdf', $cv) }}" class="dropdown-item dropdown-item-saas">
+                                            <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('cvs.pdf.preview', $cv) }}" target="_blank" class="dropdown-item dropdown-item-saas">
+                                            <i class="bi bi-file-pdf"></i> View PDF in Tab
+                                        </a>
+                                    </li>
                                     <li>
                                         <form action="{{ route('cvs.duplicate', $cv) }}" method="POST">
                                             @csrf
@@ -193,6 +206,7 @@
                                     </li>
                                 </ul>
                             </div>
+
                         </div>
                     </div>
                 </div>

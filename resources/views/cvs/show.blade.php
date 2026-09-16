@@ -40,15 +40,16 @@
             </div>
         </form>
 
-        <button type="button" class="btn-saas-secondary btn-sm" onclick="window.print()">
-            <i class="bi bi-printer"></i> Print / PDF
-        </button>
+        <a href="{{ route('cvs.pdf', $cv) }}" class="btn-saas-primary btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+        </a>
 
-        <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => 'personal-info']) }}" class="btn-saas-primary btn-sm">
-            <i class="bi bi-pencil-square"></i> Open Builder
+        <a href="{{ route('cvs.builder.show', ['cv' => $cv, 'section' => 'personal-info']) }}" class="btn-saas-secondary btn-sm">
+            <i class="bi bi-pencil-square me-1"></i> Open Builder
         </a>
     </div>
 </div>
+
 
 <!-- Live CV Document Container (A4 oriented) -->
 <div class="cv-preview-paper mb-5 shadow-sm mx-auto" style="max-width: 860px; background: #ffffff; padding: 40px; border-radius: 8px; border: 1px solid #e2e8f0; min-height: 1050px;">

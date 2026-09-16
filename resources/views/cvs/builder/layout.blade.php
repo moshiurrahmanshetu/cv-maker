@@ -140,9 +140,15 @@
                     <strong>{{ $templateModel?->name ?? 'Standard' }}</strong>
                 </button>
 
-                <!-- Full Document Preview Link -->
-                <a href="{{ route('cvs.show', $cv) }}" class="btn btn-saas-secondary btn-sm" target="_blank" title="Full Page Preview">
-                    <i class="bi bi-box-arrow-up-right"></i>
+                <!-- PDF Preview Link -->
+                <a href="{{ route('cvs.pdf.preview', $cv) }}" class="btn btn-saas-secondary btn-sm" target="_blank" title="Preview PDF in New Tab">
+                    <i class="bi bi-file-pdf"></i>
+                    <span class="d-none d-md-inline ms-1">PDF Preview</span>
+                </a>
+
+                <!-- Download PDF Primary Action -->
+                <a href="{{ route('cvs.pdf', $cv) }}" class="btn btn-saas-primary btn-sm" title="Download High-Quality PDF">
+                    <i class="bi bi-download me-1"></i> Download PDF
                 </a>
 
                 <!-- Quick Status Toggle -->
@@ -155,6 +161,7 @@
                 </form>
             </div>
         </div>
+
 
         <!-- Mobile & Tablet Switcher: [ Edit Content ] | [ Live Preview ] -->
         <div class="d-lg-none mt-3 pt-3 border-top">

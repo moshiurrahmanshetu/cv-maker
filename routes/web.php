@@ -67,10 +67,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/{cv}/duplicate', [CvController::class, 'duplicate'])->name('duplicate');
         Route::post('/{cv}/toggle-status', [CvController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/{cv}/switch-template', [CvController::class, 'switchTemplate'])->name('switch-template');
+        Route::get('/{cv}/pdf', [CvController::class, 'downloadPdf'])->name('pdf');
+        Route::get('/{cv}/pdf/preview', [CvController::class, 'previewPdf'])->name('pdf.preview');
 
         // Builder Routes (CV and Letter Split-Screen Workspace)
         Route::prefix('{cv}/builder')->name('builder.')->group(function () {
             Route::get('/', [CvBuilderController::class, 'show'])->name('show');
+            Route::get('/pdf', [CvBuilderController::class, 'downloadPdf'])->name('pdf');
             Route::post('/personal-info', [CvBuilderController::class, 'savePersonalInfo'])->name('personal-info');
             Route::post('/summary', [CvBuilderController::class, 'saveSummary'])->name('summary');
             Route::post('/letter-details', [CvBuilderController::class, 'saveLetterDetails'])->name('letter-details');
